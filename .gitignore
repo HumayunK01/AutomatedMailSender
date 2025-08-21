@@ -1,5 +1,6 @@
 # Certificates folder - contains sensitive PDF files
 certificates/
+example_sender.py
 
 # Python
 __pycache__/

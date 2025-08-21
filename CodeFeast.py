@@ -5,6 +5,7 @@ from email.mime.application import MIMEApplication
 import os
 from enum import Enum
 import sys
+import time  # Added for delays
 
 # Set UTF-8 encoding for Windows console
 if sys.platform.startswith('win'):
@@ -409,14 +410,17 @@ class CodeFeastEmailSender:
 
 
     def send_batch_emails(self, email_type, recipients_data):
-        """Send batch emails of specified type"""
+        """Send batch emails of specified type with delays to prevent rate limiting"""
         success_count = 0
+        failed_emails = []  # Track failed emails
         total_count = len(recipients_data)
         
         print(f"\n[INFO] Starting batch email send for {email_type.value}s...")
-        print(f"[INFO] Total emails to send: {total_count}\n")
+        print(f"[INFO] Total emails to send: {total_count}")
+        print(f"[INFO] Estimated time: {total_count * 30} seconds ({total_count * 30 // 60} minutes {total_count * 30 % 60} seconds)\n")
         
-        for recipient in recipients_data:
+        for i, recipient in enumerate(recipients_data):
+            email_sent = False
             try:
                 success = self.send_email(
                     email_type,
@@ -425,11 +429,18 @@ class CodeFeastEmailSender:
                 )
                 if success:
                     success_count += 1
+                    email_sent = True
+                    print(f"[PROGRESS] {i+1}/{total_count} emails sent successfully")
+                    
+                    # Add 30-second delay between emails (except for the last one)
+                    if i < total_count - 1:
+                        print(f"[WAIT] Waiting 30 seconds before next email...")
+                        time.sleep(30)  # 30-second delay
+                        
             except UnicodeEncodeError as e:
                 print(f"[ERROR] Encoding error for {recipient['name']}: {str(e)}")
                 # Try to send without emoji in subject
                 try:
-                    # Create a simplified version without emoji
                     config = self.get_email_config(email_type)
                     config['subject_emoji'] = ''  # Remove emoji
                     success = self.send_email(
@@ -439,13 +450,54 @@ class CodeFeastEmailSender:
                     )
                     if success:
                         success_count += 1
+                        email_sent = True
+                        print(f"[PROGRESS] {i+1}/{total_count} emails sent successfully (retry)")
+                        
+                        # Add 30-second delay between emails (except for the last one)
+                        if i < total_count - 1:
+                            print(f"[WAIT] Waiting 30 seconds before next email...")
+                            time.sleep(30)
+                            
                 except Exception as e2:
+                    failed_emails.append({
+                        "name": recipient['name'],
+                        "email": recipient['email'],
+                        "error": f"Encoding retry failed: {e2}"
+                    })
                     print(f"[ERROR] Failed to send to {recipient['name']} (retry): {e2}")
             except Exception as e:
+                failed_emails.append({
+                    "name": recipient['name'],
+                    "email": recipient['email'],
+                    "error": str(e)
+                })
                 print(f"[ERROR] Failed to send to {recipient['name']}: {e}")
+            
+            # If email wasn't sent through any method, add to failed list
+            if not email_sent:
+                # Check if already added to avoid duplicates
+                if not any(f['email'] == recipient['email'] for f in failed_emails):
+                    failed_emails.append({
+                        "name": recipient['name'],
+                        "email": recipient['email'],
+                        "error": "Unknown error - email not sent"
+                    })
         
         print(f"\n[SUMMARY] {success_count}/{total_count} emails sent successfully!")
-        return success_count
+        
+        # Display failed emails if any
+        if failed_emails:
+            print(f"\n[FAILED EMAILS DEBUG] {len(failed_emails)} emails failed to send:")
+            print("=" * 80)
+            for i, failed in enumerate(failed_emails, 1):
+                print(f"{i}. Name: {failed['name']}")
+                print(f"   Email: {failed['email']}")
+                print(f"   Error: {failed['error']}")
+                print("-" * 60)
+        else:
+            print(f"\n[SUCCESS] All {email_type.value} emails sent successfully! 🎉")
+        
+        return success_count, failed_emails
 
 # Example usage
 if __name__ == "__main__":
@@ -761,15 +813,58 @@ if __name__ == "__main__":
         }
     ]
     
-    # Send emails to different groups
-    print("=" * 60)
-    sender.send_batch_emails(EmailType.WINNER, winners_data)
+    # Track all failed emails across all groups
+    all_failed_emails = []
+    total_success = 0
+    total_emails = 44
     
+    # Send emails to different groups with 1-minute breaks
     print("=" * 60)
-    sender.send_batch_emails(EmailType.PARTICIPANT, participants_data)
+    print("🏆 SENDING WINNER EMAILS (3 emails)")
+    success_count, failed_emails = sender.send_batch_emails(EmailType.WINNER, winners_data)
+    total_success += success_count
+    all_failed_emails.extend(failed_emails)
     
-    print("=" * 60)
-    sender.send_batch_emails(EmailType.ORGANIZER, organizers_data)
+    print("\n" + "=" * 60)
+    print("⏰ BREAK: Waiting 60 seconds between groups...")
+    time.sleep(60)  # 1-minute break between groups
     
-    print("=" * 60)
-    print("[COMPLETE] All email campaigns completed!")
+    print("\n" + "=" * 60)
+    print("🎉 SENDING PARTICIPANT EMAILS (27 emails)")
+    success_count, failed_emails = sender.send_batch_emails(EmailType.PARTICIPANT, participants_data)
+    total_success += success_count
+    all_failed_emails.extend(failed_emails)
+    
+    print("\n" + "=" * 60)
+    print("⏰ BREAK: Waiting 60 seconds between groups...")
+    time.sleep(60)  # 1-minute break between groups
+    
+    print("\n" + "=" * 60)
+    print("👥 SENDING ORGANIZER EMAILS (14 emails)")
+    success_count, failed_emails = sender.send_batch_emails(EmailType.ORGANIZER, organizers_data)
+    total_success += success_count
+    all_failed_emails.extend(failed_emails)
+    
+    print("\n" + "=" * 80)
+    print("🎊 [CAMPAIGN COMPLETE] All email campaigns finished!")
+    print("=" * 80)
+    print(f"📧 Total emails processed: {total_emails}")
+    print(f"✅ Successfully sent: {total_success}")
+    print(f"❌ Failed to send: {len(all_failed_emails)}")
+    print(f"📈 Success rate: {(total_success/total_emails)*100:.1f}%")
+    
+    # Display comprehensive failed emails summary
+    if all_failed_emails:
+        print(f"\n🚨 [FAILED EMAILS SUMMARY] {len(all_failed_emails)} emails need attention:")
+        print("=" * 80)
+        for i, failed in enumerate(all_failed_emails, 1):
+            print(f"{i}. Name: {failed['name']}")
+            print(f"   Email: {failed['email']}")
+            print(f"   Error: {failed['error']}")
+            print("-" * 60)
+        print("\n💡 [RETRY SUGGESTION] You can copy these email addresses and try sending manually or re-run the script.")
+    else:
+        print(f"\n🎉 [PERFECT SUCCESS] All {total_emails} emails sent successfully!")
+        print("🚀 No failed emails - Campaign completed flawlessly!")
+    
+    print("\n⏰ Campaign execution completed!")
