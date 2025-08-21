@@ -5,11 +5,11 @@ A comprehensive automated email system for sending certificates and appreciation
 ## 🎯 Overview
 
 This system automatically sends personalized HTML emails with PDF certificates to:
-- **Winners** (3 people) - Congratulatory emails with winner certificates
-- **Participants** (27 people) - Appreciation emails with participation certificates  
-- **Organizers** (14 people) - Thank you emails with organizer certificates
+- **Winners** - Congratulatory emails with winner certificates
+- **Participants** - Appreciation emails with participation certificates  
+- **Organizers** - Thank you emails with organizer certificates
 
-**Total**: 44 emails with professional HTML templates and PDF attachments.
+All recipient data is loaded from CSV/JSON files (no hardcoded data).
 
 ## 🚀 Features
 
@@ -98,6 +98,11 @@ SENDER_EMAIL=your_sending_email_here
 SENDER_PASSWORD=your_gmail_app_password_here
 EVENT_NAME=your_event_name_here
 
+# Data File Paths (REQUIRED)
+WINNERS_DATA_FILE=data/winners.csv
+PARTICIPANTS_DATA_FILE=data/participants.csv
+ORGANIZERS_DATA_FILE=data/organizers.json
+
 # Timing Configuration (in seconds)
 DELAY_BETWEEN_EMAILS=30
 DELAY_BETWEEN_GROUPS=60
@@ -108,6 +113,35 @@ SMTP_PORT=465
 
 # Debug Settings
 DEBUG_MODE=false
+DRY_RUN_MODE=false
+```
+
+### 📁 Required Data Files
+
+Create your data files in the specified formats:
+
+**`data/winners.csv`:**
+```csv
+name,email,rank_position
+John Doe,john@example.com,1st Place
+Jane Smith,jane@example.com,2nd Place
+```
+
+**`data/participants.csv`:**
+```csv
+name,email
+Alice Johnson,alice@example.com
+Bob Wilson,bob@example.com
+```
+
+**`data/organizers.json`:**
+```json
+[
+  {
+    "name": "Organizer Name",
+    "email": "organizer@example.com"
+  }
+]
 ```
 
 ### Setup Instructions

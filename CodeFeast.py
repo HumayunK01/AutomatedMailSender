@@ -6,6 +6,8 @@ import os
 from enum import Enum
 import sys
 import time  # Added for delays
+import json
+import csv
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -43,6 +45,33 @@ class CodeFeastEmailSender:
         
         # Debug mode
         self.debug_mode = os.getenv('DEBUG_MODE', 'false').lower() == 'true'
+        
+        # Load dynamic event statistics from environment
+        self.total_participants = int(os.getenv('TOTAL_PARTICIPANTS', '30'))
+        self.problems_solved = int(os.getenv('PROBLEMS_SOLVED', '23'))
+        self.completion_rate = os.getenv('COMPLETION_RATE', '80%')
+        
+        # Load data file paths
+        self.winners_data_file = os.getenv('WINNERS_DATA_FILE', '')
+        self.participants_data_file = os.getenv('PARTICIPANTS_DATA_FILE', '')
+        self.organizers_data_file = os.getenv('ORGANIZERS_DATA_FILE', '')
+        
+        # Certificate path configuration
+        self.certificate_base_path = os.getenv('CERTIFICATE_BASE_PATH', 'certificates')
+        self.winners_cert_folder = os.getenv('WINNERS_CERT_FOLDER', 'winners')
+        self.participants_cert_folder = os.getenv('PARTICIPANTS_CERT_FOLDER', 'participants')
+        self.organizers_cert_folder = os.getenv('ORGANIZERS_CERT_FOLDER', 'organizers')
+        
+        # Email template customization
+        self.organization_name = os.getenv('ORGANIZATION_NAME', 'Programmers Club')
+        self.organization_tagline = os.getenv('ORGANIZATION_TAGLINE', 'Making coding accessible to everyone')
+        self.copyright_year = os.getenv('COPYRIGHT_YEAR', '2025')
+        
+        # Batch processing options
+        self.max_batch_size = int(os.getenv('MAX_BATCH_SIZE', '100'))
+        self.retry_failed_emails = os.getenv('RETRY_FAILED_EMAILS', 'true').lower() == 'true'
+        self.max_retries = int(os.getenv('MAX_RETRIES', '3'))
+        self.dry_run_mode = os.getenv('DRY_RUN_MODE', 'false').lower() == 'true'
         
     def get_email_config(self, email_type):
         """Get email configuration based on type"""
@@ -132,15 +161,15 @@ class CodeFeastEmailSender:
             <h3 style="color: #6b21a8; margin: 0 0 20px; font-size: 22px;">📊 Event Statistics</h3>
             <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
                 <div class="stats-item" style="background: white; padding: 15px; border-radius: 8px; text-align: center;">
-                    <div style="font-size: 24px; font-weight: bold; color: #6b21a8;">{stats.get('total_participants', 'N/A')}</div>
+                    <div style="font-size: 24px; font-weight: bold; color: #6b21a8;">{stats.get('total_participants', self.total_participants)}</div>
                     <div style="color: #6b21a8; font-size: 14px;">Total Participants</div>
                 </div>
                 <div class="stats-item" style="background: white; padding: 15px; border-radius: 8px; text-align: center;">
-                    <div style="font-size: 24px; font-weight: bold; color: #6b21a8;">{stats.get('problems_solved', 'N/A')}</div>
+                    <div style="font-size: 24px; font-weight: bold; color: #6b21a8;">{stats.get('problems_solved', self.problems_solved)}</div>
                     <div style="color: #6b21a8; font-size: 14px;">Problems Solved</div>
                 </div>
                 <div class="stats-item" style="background: white; padding: 15px; border-radius: 8px; text-align: center;">
-                    <div style="font-size: 24px; font-weight: bold; color: #6b21a8;">{stats.get('completion_rate', 'N/A')}</div>
+                    <div style="font-size: 24px; font-weight: bold; color: #6b21a8;">{stats.get('completion_rate', self.completion_rate)}</div>
                     <div style="color: #6b21a8; font-size: 14px;">Completion Rate</div>
                 </div>
             </div>
@@ -361,8 +390,8 @@ class CodeFeastEmailSender:
                         <div class="signature-section" style="margin-top: 35px; padding-top: 30px; border-top: 2px solid #e5e7eb; text-align: center;">
                             <p style="margin: 0 0 5px; color: #1f2937; font-weight: 600; font-size: 16px;">With appreciation,</p>
                             <p style="margin: 0 0 5px; color: {config['primary_color']}; font-weight: 800; font-size: 20px;">{self.event_name} Team</p>
-                            <p style="margin: 0 0 5px; color: #6b7280; font-size: 14px; font-weight: 600;">Programmers Club</p>
-                            <p style="margin: 10px 0 0; color: #9ca3af; font-size: 12px;">Making coding accessible to everyone</p>
+                            <p style="margin: 0 0 5px; color: #6b7280; font-size: 14px; font-weight: 600;">{self.organization_name}</p>
+                            <p style="margin: 10px 0 0; color: #9ca3af; font-size: 12px;">{self.organization_tagline}</p>
                         </div>
                     </div>
                     
@@ -370,7 +399,7 @@ class CodeFeastEmailSender:
                     <div class="footer-section" style="background: #f9fafb; padding: 20px 30px; border-top: 1px solid #e5e7eb; text-align: center;">
                         <p style="margin: 0; color: #6b7280; font-size: 12px; line-height: 1.4;">
                             This email was sent by {self.event_name} Team. If you have any questions, please contact us.<br>
-                            © 2025 Programmers Club. All rights reserved.
+                            © {self.copyright_year} {self.organization_name}. All rights reserved.
                         </p>
                     </div>
                 </div>
@@ -383,6 +412,13 @@ class CodeFeastEmailSender:
     
     def send_email(self, email_type, recipient_data, attachment_path=None):
         """Send email based on type and recipient data"""
+        # Dry run mode - just log what would be sent
+        if self.dry_run_mode:
+            print(f"[DRY RUN] Would send {email_type.value} email to {recipient_data['name']} ({recipient_data['email']})")
+            if attachment_path:
+                print(f"[DRY RUN] Would attach certificate: {attachment_path}")
+            return True
+            
         config = self.get_email_config(email_type)
         
         # Create message container
@@ -427,6 +463,33 @@ class CodeFeastEmailSender:
 
     def send_batch_emails(self, email_type, recipients_data):
         """Send batch emails of specified type with delays to prevent rate limiting"""
+        # Split into batches if max_batch_size is set
+        if len(recipients_data) > self.max_batch_size:
+            print(f"[INFO] Splitting {len(recipients_data)} emails into batches of {self.max_batch_size}")
+            all_success = 0
+            all_failed = []
+            
+            for i in range(0, len(recipients_data), self.max_batch_size):
+                batch = recipients_data[i:i + self.max_batch_size]
+                batch_num = (i // self.max_batch_size) + 1
+                total_batches = (len(recipients_data) + self.max_batch_size - 1) // self.max_batch_size
+                
+                print(f"\n[BATCH {batch_num}/{total_batches}] Processing {len(batch)} emails...")
+                success_count, failed_emails = self._send_batch_chunk(email_type, batch)
+                all_success += success_count
+                all_failed.extend(failed_emails)
+                
+                # Delay between batches (except for the last batch)
+                if i + self.max_batch_size < len(recipients_data):
+                    print(f"[WAIT] Waiting {self.delay_between_groups} seconds between batches...")
+                    time.sleep(self.delay_between_groups)
+            
+            return all_success, all_failed
+        else:
+            return self._send_batch_chunk(email_type, recipients_data)
+    
+    def _send_batch_chunk(self, email_type, recipients_data):
+        """Send a chunk of emails with individual delays"""
         success_count = 0
         failed_emails = []  # Track failed emails
         total_count = len(recipients_data)
@@ -515,347 +578,121 @@ class CodeFeastEmailSender:
         
         return success_count, failed_emails
 
+    def load_data_from_file(self, file_path, data_type):
+        """Load recipient data from JSON or CSV file"""
+        if not file_path or not os.path.exists(file_path):
+            return []
+        
+        try:
+            file_extension = os.path.splitext(file_path)[1].lower()
+            
+            if file_extension == '.json':
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    return data if isinstance(data, list) else []
+            
+            elif file_extension == '.csv':
+                data = []
+                with open(file_path, 'r', encoding='utf-8', newline='') as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        # Build certificate path dynamically
+                        cert_folder = getattr(self, f"{data_type}_cert_folder")
+                        cert_filename = self.generate_certificate_filename(row['name'])
+                        row['certificate_path'] = os.path.join(self.certificate_base_path, cert_folder, cert_filename)
+                        
+                        # Add event stats for organizers if not present
+                        if data_type == 'organizers' and 'event_stats' not in row:
+                            row['event_stats'] = {
+                                'total_participants': self.total_participants,
+                                'problems_solved': self.problems_solved,
+                                'completion_rate': self.completion_rate
+                            }
+                        data.append(row)
+                return data
+            
+        except Exception as e:
+            print(f"[ERROR] Failed to load data from {file_path}: {e}")
+            return []
+        
+        return []
+    
+    def generate_certificate_filename(self, name):
+        """Generate certificate filename from person's name"""
+        # Remove spaces, convert to lowercase, and add .pdf extension
+        filename = name.lower().replace(' ', '').replace('.', '') + '.pdf'
+        return filename
+
+    def get_recipients_data(self):
+        """Get all recipient data from files only - no hardcoded fallbacks"""
+        winners = self.load_data_from_file(self.winners_data_file, 'winners')
+        participants = self.load_data_from_file(self.participants_data_file, 'participants')
+        organizers = self.load_data_from_file(self.organizers_data_file, 'organizers')
+        
+        # Validate that all required files are loaded
+        if not winners and self.winners_data_file:
+            print(f"[WARNING] No winners data loaded from {self.winners_data_file}")
+        if not participants and self.participants_data_file:
+            print(f"[WARNING] No participants data loaded from {self.participants_data_file}")
+        if not organizers and self.organizers_data_file:
+            print(f"[WARNING] No organizers data loaded from {self.organizers_data_file}")
+            
+        # Show data file usage status
+        print(f"[INFO] Data loaded: {len(winners)} winners, {len(participants)} participants, {len(organizers)} organizers")
+        if not any([winners, participants, organizers]):
+            print("[ERROR] No data files specified or loaded! Please check your .env configuration.")
+            print("[INFO] Required environment variables:")
+            print("  - WINNERS_DATA_FILE=data/winners.csv")
+            print("  - PARTICIPANTS_DATA_FILE=data/participants.csv") 
+            print("  - ORGANIZERS_DATA_FILE=data/organizers.json")
+            
+        return winners, participants, organizers
+
+
+
 # Example usage
 if __name__ == "__main__":
     # Initialize email sender (loads configuration from .env file)
     sender = CodeFeastEmailSender()
     
-    # Winners data (Top 3)
-    winners_data = [
-        {
-            "email": "arzoo.232262.co@mhssce.ac.in",
-            "name": "Aarzoo Nazim Asar",
-            "certificate_path": "certificates/winners/aarzoonazimasar.pdf",
-            "rank_position": "1st Place"
-        },
-        {
-            "email": "mohammedanasnathani0123@gmail.com",
-            "name": "Mohammed Anas Nathani",
-            "certificate_path": "certificates/winners/mohammedanasnathani.pdf",
-            "rank_position": "2nd Place"
-        },
-        {
-            "email": "mohammedsaif.s@somaiya.edu",
-            "name": "Mohammed Saif Shaikh",
-            "certificate_path": "certificates/winners/mohammedsaifshaikh.pdf",
-            "rank_position": "3rd Place"
-        }
-    ]
-    
-    # Participants data
-    participants_data = [
-        {
-            "email": "makardwaj.231838.ci@mhssce.ac.in",
-            "name": "Makardwaj Parab",
-            "certificate_path": "certificates/participants/makardwajparab.pdf"
-        },
-        {
-            "email": "sahil.241708.cs@mhssce.ac.in",
-            "name": "Sahil Ansari",
-            "certificate_path": "certificates/participants/sahilansari.pdf"
-        },
-        {
-            "email": "zoha251284@gmail.com",
-            "name": "Ansari Zoha Najmul Kalam",
-            "certificate_path": "certificates/participants/ansarizohanajmulkalam.pdf"
-        },
-        {
-            "email": "saif.231824.ci@mhssce.ac.in",
-            "name": "Khan Mohammad Saif",
-            "certificate_path": "certificates/participants/khanmohammadsaif.pdf"
-        },
-        {
-            "email": "ramsha.231807.ci@mhssce.ac.in",
-            "name": "Ansari Ramsha",
-            "certificate_path": "certificates/participants/ansariramshashakil.pdf"
-        },
-        {
-            "email": "hashir.231825.ci@mhssce.ac.in",
-            "name": "Khan Mohd Hashir",
-            "certificate_path": "certificates/participants/khanmohdhashir.pdf"
-        },
-        {
-            "email": "laaibah.231820.ci@mhssce.ac.in",
-            "name": "Khan Laaibah",
-            "certificate_path": "certificates/participants/khanlaaibah.pdf"
-        },
-        {
-            "email": "abdullah.221829.ci@mhssce.ac.in",
-            "name": "Abdullah Mewawala",
-            "certificate_path": "certificates/participants/abdullahmewawala.pdf"
-        },
-        {
-            "email": "maaz.221842.ci@mhssce.ac.in",
-            "name": "Shaikh Maaz",
-            "certificate_path": "certificates/participants/shaikhmaaz.pdf"
-        },
-        {
-            "email": "afjal.221246.co@mhssce.ac.in",
-            "name": "Shaikh Mohammed Afjal",
-            "certificate_path": "certificates/participants/shaikhmohammedafjal.pdf"
-        },
-        {
-            "email": "ayaanshaikh9421@gmail.com",
-            "name": "Ayaan Shaikh",
-            "certificate_path": "certificates/participants/ayaanshaikh.pdf"
-        },
-        {
-            "email": "umar.221208.co@mhssce.ac.in",
-            "name": "Ansari Umar Farooque",
-            "certificate_path": "certificates/participants/ansariumarfarooque.pdf"
-        },
-        {
-            "email": "baria.221212.co@mhssce.ac.in",
-            "name": "Shams Baria",
-            "certificate_path": "certificates/participants/shamsbaria.pdf"
-        },
-        {
-            "email": "kaif.221459.it@mhssce.ac.in",
-            "name": "Ansari Mohd Kaif",
-            "certificate_path": "certificates/participants/ansarimohdkaif.pdf"
-        },
-        {
-            "email": "aparajita2419@gmail.com",
-            "name": "Aparajita Singh",
-            "certificate_path": "certificates/participants/aparajitasingh.pdf"
-        },
-        {
-            "email": "aadnanq22comp@student.mes.ac.in",
-            "name": "Adnan Ansar",
-            "certificate_path": "certificates/participants/adnanansar.pdf"
-        },
-        {
-            "email": "hujaifa.221444.it@mhssce.ac.in",
-            "name": "Shaikh Hujaifa",
-            "certificate_path": "certificates/participants/shaikhhujaifajaved.pdf"
-        },
-        {
-            "email": "hendrejatinpay@gmail.com",
-            "name": "Jatin Nitin Hendre",
-            "certificate_path": "certificates/participants/jatinnitinhendre.pdf"
-        },
-        {
-            "email": "vatdpatel@gmail.com",
-            "name": "Vatsal Patel",
-            "certificate_path": "certificates/participants/vatsalpatel.pdf"
-        },
-        {
-            "email": "ayushmohite0811@gmail.com",
-            "name": "Ayush Mohite",
-            "certificate_path": "certificates/participants/ayushmohite.pdf"
-        },
-        {
-            "email": "swayambhoir579@gmail.com",
-            "name": "Swayam Kabir Bhoir",
-            "certificate_path": "certificates/participants/swayamkabirbhoir.pdf"
-        },
-        {
-            "email": "223vedant0059@dbit.in",
-            "name": "Vedant Apraj",
-            "certificate_path": "certificates/participants/vedantapraj.pdf"
-        },
-        {
-            "email": "aroratejjan7@gmail.com",
-            "name": "Tejjan Arora",
-            "certificate_path": "certificates/participants/tejjanarora.pdf"
-        },
-        {
-            "email": "farhan.241259.co@mhssce.ac.in",
-            "name": "Siddiqui Mohd Farhan",
-            "certificate_path": "certificates/participants/siddiquimohdfarhan.pdf"
-        },
-        {
-            "email": "mr.rajbhadrabhanushali@gmail.com",
-            "name": "Raj Bhanushali",
-            "certificate_path": "certificates/participants/rajbhanushali.pdf"
-        },
-        {
-            "email": "kvijay2a3v@gmail.com",
-            "name": "Aniket Kamble",
-            "certificate_path": "certificates/participants/aniketkamble.pdf"
-        },
-        {
-            "email": "anujmishra200421@gmail.com",
-            "name": "Anuj Mishra",
-            "certificate_path": "certificates/participants/anujmishra.pdf"
-        }
-    ]
-    
-    # Organizers data
-    organizers_data = [
-        {
-            "email": "rahil.232870.ci@mhssce.ac.in",
-            "name": "Rahil Khan",
-            "certificate_path": "certificates/organizers/rahilkhan.pdf",
-            "event_stats": {
-                "total_participants": 30,
-                "problems_solved": 23,
-                "completion_rate": "80%"
-            }
-        },
-        {
-            "email": "rugved.221235.co@mhssce.ac.in",
-            "name": "Rugved Patil",
-            "certificate_path": "certificates/organizers/rugvedpatil.pdf",
-            "event_stats": {
-                "total_participants": 30,
-                "problems_solved": 23,
-                "completion_rate": "80%"
-            }
-        },
-        {
-            "email": "ali.221204.co@mhssce.ac.in",
-            "name": "Ali Ansari",
-            "certificate_path": "certificates/organizers/aliansari.pdf",
-            "event_stats": {
-                "total_participants": 30,
-                "problems_solved": 23,
-                "completion_rate": "80%"
-            }
-        },
-        {
-            "email": "humayun.232863.ci@mhssce.ac.in",
-            "name": "Humayun Khan",
-            "certificate_path": "certificates/organizers/humayunkhan.pdf",
-            "event_stats": {
-                "total_participants": 30,
-                "problems_solved": 23,
-                "completion_rate": "80%"
-            }
-        },
-        {
-            "email": "gulamnabi.232865.ci@mhssce.ac.in",
-            "name": "Gulamnabi Mundus",
-            "certificate_path": "certificates/organizers/gulamnabimundus.pdf",
-            "event_stats": {
-                "total_participants": 30,
-                "problems_solved": 23,
-                "completion_rate": "80%"
-            }
-        },
-        {
-            "email": "om.231830.ci@mhssce.ac.in",
-            "name": "Om Mishra",
-            "certificate_path": "certificates/organizers/ommishra.pdf",
-            "event_stats": {
-                "total_participants": 30,
-                "problems_solved": 23,
-                "completion_rate": "80%"
-            }
-        },
-        {
-            "email": "maaz.242267.co@mhssce.ac.in",
-            "name": "Maaz Khan",
-            "certificate_path": "certificates/organizers/maazkhan.pdf",
-            "event_stats": {
-                "total_participants": 30,
-                "problems_solved": 23,
-                "completion_rate": "80%"
-            }
-        },
-        {
-            "email": "hammad.241257.co@mhssce.ac.in",
-            "name": "Hammad Siddique",
-            "certificate_path": "certificates/organizers/hammadsiddique.pdf",
-            "event_stats": {
-                "total_participants": 30,
-                "problems_solved": 23,
-                "completion_rate": "80%"
-            }
-        },
-        {
-            "email": "adarsh.241855.ci@mhssce.ac.in",
-            "name": "Adarsh Sharma",
-            "certificate_path": "certificates/organizers/aadarshsharma.pdf",
-            "event_stats": {
-                "total_participants": 30,
-                "problems_solved": 23,
-                "completion_rate": "80%"
-            }
-        },
-        {
-            "email": "zehra.231757.cs@mhssce.ac.in",
-            "name": "Zehra Shaikh",
-            "certificate_path": "certificates/organizers/zehrashaikh.pdf",
-            "event_stats": {
-                "total_participants": 30,
-                "problems_solved": 23,
-                "completion_rate": "80%"
-            }
-        },
-        {
-            "email": "hannan.231211.co@mhssce.ac.in",
-            "name": "Hannan Shemle",
-            "certificate_path": "certificates/organizers/hannanshemle.pdf",
-            "event_stats": {
-                "total_participants": 30,
-                "problems_solved": 23,
-                "completion_rate": "80%"
-            }
-        },
-        {
-            "email": "faiz.221231.co@mhssce.ac.in",
-            "name": "Faiz Ahmed",
-            "certificate_path": "certificates/organizers/faizahmed.pdf",
-            "event_stats": {
-                "total_participants": 30,
-                "problems_solved": 23,
-                "completion_rate": "80%"
-            }
-        },
-        {
-            "email": "inshiraah.232263.co@mhssce.ac.in",
-            "name": "Inshiraah Khan",
-            "certificate_path": "certificates/organizers/inshiraahkhan.pdf",
-            "event_stats": {
-                "total_participants": 30,
-                "problems_solved": 23,
-                "completion_rate": "80%"
-            }
-        },
-        {
-            "email": "fatima.241844.ci@mhssce.ac.in",
-            "name": "Fatima Shaikh",
-            "certificate_path": "certificates/organizers/fatimashaikh.pdf",
-            "event_stats": {
-                "total_participants": 30,
-                "problems_solved": 23,
-                "completion_rate": "80%"
-            }
-        }
-    ]
+    # Load recipient data dynamically (from files or fallback to defaults)
+    winners_data, participants_data, organizers_data = sender.get_recipients_data()
     
     # Track all failed emails across all groups
     all_failed_emails = []
     total_success = 0
-    total_emails = 44
+    total_emails = len(winners_data) + len(participants_data) + len(organizers_data)
     
-    # Send emails to different groups with 1-minute breaks
-    print("=" * 60)
-    print("🏆 SENDING WINNER EMAILS (3 emails)")
-    success_count, failed_emails = sender.send_batch_emails(EmailType.WINNER, winners_data)
-    total_success += success_count
-    all_failed_emails.extend(failed_emails)
+    # Validate we have data to send
+    if total_emails == 0:
+        print("\n❌ [ERROR] No email data loaded! Cannot proceed with campaign.")
+        print("[INFO] Please ensure data files are properly configured in your .env file:")
+        print("   WINNERS_DATA_FILE=data/winners.csv")
+        print("   PARTICIPANTS_DATA_FILE=data/participants.csv")
+        print("   ORGANIZERS_DATA_FILE=data/organizers.json")
+        exit(1)
     
-    print("\n" + "=" * 60)
-    print(f"⏰ BREAK: Waiting {sender.delay_between_groups} seconds between groups...")
-    time.sleep(sender.delay_between_groups)
+    # Send emails to different groups with breaks between them
+    groups_to_send = []
+    if len(winners_data) > 0:
+        groups_to_send.append(("🏆 WINNERS", EmailType.WINNER, winners_data))
+    if len(participants_data) > 0:
+        groups_to_send.append(("🎉 PARTICIPANTS", EmailType.PARTICIPANT, participants_data))
+    if len(organizers_data) > 0:
+        groups_to_send.append(("👥 ORGANIZERS", EmailType.ORGANIZER, organizers_data))
     
-    print("\n" + "=" * 60)
-    print("🎉 SENDING PARTICIPANT EMAILS (27 emails)")
-    success_count, failed_emails = sender.send_batch_emails(EmailType.PARTICIPANT, participants_data)
-    total_success += success_count
-    all_failed_emails.extend(failed_emails)
-    
-    print("\n" + "=" * 60)
-    print(f"⏰ BREAK: Waiting {sender.delay_between_groups} seconds between groups...")
-    time.sleep(sender.delay_between_groups)
-    
-    print("\n" + "=" * 60)
-    print("👥 SENDING ORGANIZER EMAILS (14 emails)")
-    success_count, failed_emails = sender.send_batch_emails(EmailType.ORGANIZER, organizers_data)
-    total_success += success_count
-    all_failed_emails.extend(failed_emails)
+    # Send emails for each group
+    for i, (group_name, email_type, data) in enumerate(groups_to_send):
+        if i > 0:  # Add break between groups (not before first group)
+            print("\n" + "=" * 60)
+            print(f"⏰ BREAK: Waiting {sender.delay_between_groups} seconds between groups...")
+            time.sleep(sender.delay_between_groups)
+        
+        print("\n" + "=" * 60)
+        print(f"{group_name} EMAILS ({len(data)} emails)")
+        success_count, failed_emails = sender.send_batch_emails(email_type, data)
+        total_success += success_count
+        all_failed_emails.extend(failed_emails)
     
     print("\n" + "=" * 80)
     print("🎊 [CAMPAIGN COMPLETE] All email campaigns finished!")
