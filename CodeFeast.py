@@ -6,6 +6,10 @@ import os
 from enum import Enum
 import sys
 import time  # Added for delays
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Set UTF-8 encoding for Windows console
 if sys.platform.startswith('win'):
@@ -23,10 +27,22 @@ class EmailType(Enum):
     ORGANIZER = "organizer"
 
 class CodeFeastEmailSender:
-    def __init__(self, sender_email, sender_password, event_name="Code Feast 4.0"):
-        self.sender_email = "programmersclub@mhssce.ac.in"
-        self.sender_password = "kinc oewc nyku grcm"
-        self.event_name = event_name
+    def __init__(self, sender_email=None, sender_password=None, event_name=None):
+        # Load from environment variables or use provided values
+        self.sender_email = sender_email or os.getenv('SENDER_EMAIL', 'programmersclub@mhssce.ac.in')
+        self.sender_password = sender_password or os.getenv('SENDER_PASSWORD', 'your_gmail_app_password_here')
+        self.event_name = event_name or os.getenv('EVENT_NAME', 'Code Feast 4.0')
+        
+        # Load timing configuration from environment
+        self.delay_between_emails = int(os.getenv('DELAY_BETWEEN_EMAILS', '30'))
+        self.delay_between_groups = int(os.getenv('DELAY_BETWEEN_GROUPS', '60'))
+        
+        # Load email server configuration
+        self.smtp_server = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
+        self.smtp_port = int(os.getenv('SMTP_PORT', '465'))
+        
+        # Debug mode
+        self.debug_mode = os.getenv('DEBUG_MODE', 'false').lower() == 'true'
         
     def get_email_config(self, email_type):
         """Get email configuration based on type"""
@@ -396,7 +412,7 @@ class CodeFeastEmailSender:
         
         try:
             # Create secure connection and send email
-            server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+            server = smtplib.SMTP_SSL(self.smtp_server, self.smtp_port)
             server.login(self.sender_email, self.sender_password)
             server.sendmail(self.sender_email, recipient_data['email'], msg.as_string())
             server.quit()
@@ -417,7 +433,7 @@ class CodeFeastEmailSender:
         
         print(f"\n[INFO] Starting batch email send for {email_type.value}s...")
         print(f"[INFO] Total emails to send: {total_count}")
-        print(f"[INFO] Estimated time: {total_count * 30} seconds ({total_count * 30 // 60} minutes {total_count * 30 % 60} seconds)\n")
+        print(f"[INFO] Estimated time: {total_count * self.delay_between_emails} seconds ({total_count * self.delay_between_emails // 60} minutes {total_count * self.delay_between_emails % 60} seconds)\n")
         
         for i, recipient in enumerate(recipients_data):
             email_sent = False
@@ -432,10 +448,10 @@ class CodeFeastEmailSender:
                     email_sent = True
                     print(f"[PROGRESS] {i+1}/{total_count} emails sent successfully")
                     
-                    # Add 30-second delay between emails (except for the last one)
+                    # Add delay between emails (except for the last one)
                     if i < total_count - 1:
-                        print(f"[WAIT] Waiting 30 seconds before next email...")
-                        time.sleep(30)  # 30-second delay
+                        print(f"[WAIT] Waiting {self.delay_between_emails} seconds before next email...")
+                        time.sleep(self.delay_between_emails)
                         
             except UnicodeEncodeError as e:
                 print(f"[ERROR] Encoding error for {recipient['name']}: {str(e)}")
@@ -453,10 +469,10 @@ class CodeFeastEmailSender:
                         email_sent = True
                         print(f"[PROGRESS] {i+1}/{total_count} emails sent successfully (retry)")
                         
-                        # Add 30-second delay between emails (except for the last one)
+                        # Add delay between emails (except for the last one)
                         if i < total_count - 1:
-                            print(f"[WAIT] Waiting 30 seconds before next email...")
-                            time.sleep(30)
+                            print(f"[WAIT] Waiting {self.delay_between_emails} seconds before next email...")
+                            time.sleep(self.delay_between_emails)
                             
                 except Exception as e2:
                     failed_emails.append({
@@ -501,12 +517,8 @@ class CodeFeastEmailSender:
 
 # Example usage
 if __name__ == "__main__":
-    # Initialize email sender
-    sender = CodeFeastEmailSender(
-        sender_email="programmersclub@mhssce.ac.in",
-        sender_password="kinc oewc nyku grcm",
-        event_name="Code Feast 4.0"
-    )
+    # Initialize email sender (loads configuration from .env file)
+    sender = CodeFeastEmailSender()
     
     # Winners data (Top 3)
     winners_data = [
@@ -826,8 +838,8 @@ if __name__ == "__main__":
     all_failed_emails.extend(failed_emails)
     
     print("\n" + "=" * 60)
-    print("⏰ BREAK: Waiting 60 seconds between groups...")
-    time.sleep(60)  # 1-minute break between groups
+    print(f"⏰ BREAK: Waiting {sender.delay_between_groups} seconds between groups...")
+    time.sleep(sender.delay_between_groups)
     
     print("\n" + "=" * 60)
     print("🎉 SENDING PARTICIPANT EMAILS (27 emails)")
@@ -836,8 +848,8 @@ if __name__ == "__main__":
     all_failed_emails.extend(failed_emails)
     
     print("\n" + "=" * 60)
-    print("⏰ BREAK: Waiting 60 seconds between groups...")
-    time.sleep(60)  # 1-minute break between groups
+    print(f"⏰ BREAK: Waiting {sender.delay_between_groups} seconds between groups...")
+    time.sleep(sender.delay_between_groups)
     
     print("\n" + "=" * 60)
     print("👥 SENDING ORGANIZER EMAILS (14 emails)")

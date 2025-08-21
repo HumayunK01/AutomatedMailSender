@@ -91,18 +91,30 @@ automatedemailsender/
 
 ## ⚙️ Configuration
 
-### Email Settings
-```python
-self.sender_email = "programmersclub@mhssce.ac.in"
-self.sender_password = "kinc oewc nyku grcm"  # App Password
-self.event_name = "Code Feast 4.0"
+### Environment Variables (.env file)
+```bash
+# Email Configuration
+SENDER_EMAIL=your_sending_email_here
+SENDER_PASSWORD=your_gmail_app_password_here
+EVENT_NAME=your_event_name_here
+
+# Timing Configuration (in seconds)
+DELAY_BETWEEN_EMAILS=30
+DELAY_BETWEEN_GROUPS=60
+
+# Email Settings
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=465
+
+# Debug Settings
+DEBUG_MODE=false
 ```
 
-### Timing Settings
-```python
-DELAY_BETWEEN_EMAILS = 30  # seconds
-DELAY_BETWEEN_GROUPS = 60  # seconds
-```
+### Setup Instructions
+1. Copy `env.example` to `.env`
+2. Replace `your_gmail_app_password_here` with your actual Gmail App Password
+3. Adjust timing settings if needed
+4. Optionally modify event name and email settings
 
 ## 🚀 Usage
 
@@ -113,6 +125,13 @@ git clone https://github.com/HumayunK01/AutomatedMailSender.git
 
 # Navigate to project directory
 cd AutomatedMailSender
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Copy and configure environment file
+cp env.example .env
+# Edit .env file with your Gmail credentials
 
 # Run the main script
 python CodeFeast.py

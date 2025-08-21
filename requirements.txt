@@ -1,0 +1,10 @@
+# External dependencies
+python-dotenv==1.0.0
+
+# All other imports are from Python standard library:
+# - smtplib (built-in email sending)
+# - email.mime.text, email.mime.multipart, email.mime.application (built-in email formatting)
+# - os (built-in operating system interface)
+# - enum (built-in enumeration support)
+# - sys (built-in system-specific parameters)
+# - time (built-in time-related functions)
