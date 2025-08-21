@@ -1,4 +1,4 @@
-name,email,rank_position
-Humayun Khan,humayuncursor@gmail.com,1st Place
-Humayun Khan,hellohumayunk@gmail.com,2nd Place
-Humayun Khan,lifeofprompt@gmail.com,3rd Place
+name,email,rank_position,certificate_path
+Mohammed Saif Shaikh,saif.shaikh@mhssce.ac.in,1st,certificates/winners/mohammedsaifshaikh.pdf
+Mohammed Anas Nathani,anas.nathani@mhssce.ac.in,2nd,certificates/winners/mohammedanasnathani.pdf
+Aarzoon Azim Asar,aarzoon.azar@mhssce.ac.in,3rd,certificates/winners/aarzoonazimasar.pdf

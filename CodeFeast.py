@@ -589,17 +589,27 @@ class CodeFeastEmailSender:
             if file_extension == '.json':
                 with open(file_path, 'r', encoding='utf-8') as f:
                     data = json.load(f)
-                    return data if isinstance(data, list) else []
+                    if isinstance(data, list):
+                        # Use certificate paths directly from JSON file
+                        for item in data:
+                            # If certificate_path is not provided in JSON, generate it
+                            if 'certificate_path' not in item:
+                                cert_folder = getattr(self, f"{data_type}_cert_folder")
+                                cert_filename = self.generate_certificate_filename(item['name'])
+                                item['certificate_path'] = os.path.join(self.certificate_base_path, cert_folder, cert_filename)
+                        return data
+                    return []
             
             elif file_extension == '.csv':
                 data = []
                 with open(file_path, 'r', encoding='utf-8', newline='') as f:
                     reader = csv.DictReader(f)
                     for row in reader:
-                        # Build certificate path dynamically
-                        cert_folder = getattr(self, f"{data_type}_cert_folder")
-                        cert_filename = self.generate_certificate_filename(row['name'])
-                        row['certificate_path'] = os.path.join(self.certificate_base_path, cert_folder, cert_filename)
+                        # Use certificate path from CSV if provided, otherwise generate it
+                        if 'certificate_path' not in row:
+                            cert_folder = getattr(self, f"{data_type}_cert_folder")
+                            cert_filename = self.generate_certificate_filename(row['name'])
+                            row['certificate_path'] = os.path.join(self.certificate_base_path, cert_folder, cert_filename)
                         
                         # Add event stats for organizers if not present
                         if data_type == 'organizers' and 'event_stats' not in row:
@@ -672,14 +682,38 @@ if __name__ == "__main__":
         print("   ORGANIZERS_DATA_FILE=data/organizers.json")
         exit(1)
     
-    # Send emails to different groups with breaks between them
+    # Check which groups have data and prepare to send emails
     groups_to_send = []
+    
     if len(winners_data) > 0:
         groups_to_send.append(("🏆 WINNERS", EmailType.WINNER, winners_data))
+        print(f"✅ Winners group: {len(winners_data)} emails will be sent")
+    else:
+        print("⏭️  Winners group: No data found - skipping")
+    
     if len(participants_data) > 0:
         groups_to_send.append(("🎉 PARTICIPANTS", EmailType.PARTICIPANT, participants_data))
+        print(f"✅ Participants group: {len(participants_data)} emails will be sent")
+    else:
+        print("⏭️  Participants group: No data found - skipping")
+    
     if len(organizers_data) > 0:
         groups_to_send.append(("👥 ORGANIZERS", EmailType.ORGANIZER, organizers_data))
+        print(f"✅ Organizers group: {len(organizers_data)} emails will be sent")
+    else:
+        print("⏭️  Organizers group: No data found - skipping")
+    
+    # Check if we have any groups to send emails to
+    if not groups_to_send:
+        print("\n" + "=" * 60)
+        print("❌ [NO EMAILS TO SEND] No data found in any group!")
+        print("=" * 60)
+        print("📋 Please check your data files:")
+        print("   - Winners: data/winners.csv")
+        print("   - Participants: data/participants.csv") 
+        print("   - Organizers: data/organizers.json")
+        print("\n💡 Make sure the files exist and contain valid data.")
+        exit(0)
     
     # Send emails for each group
     for i, (group_name, email_type, data) in enumerate(groups_to_send):
