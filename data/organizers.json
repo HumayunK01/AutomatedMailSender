@@ -1,77 +1,7 @@
 [
   {
-    "name": "Aaliya Idrisi",
-    "email": "aaliya.241619.et@mhssce.ac.in",
-    "certificate_path": "certificates/organizers/aaliyaidrisi.pdf"
-  },
-  {
-    "name": "Fatima Shaikh",
-    "email": "fatima.shaikh@mhssce.ac.in",
-    "certificate_path": "certificates/organizers/fatimashaikh.pdf"
-  },
-  {
-    "name": "Inshiraah Khan",
-    "email": "inshiraah.khan@mhssce.ac.in",
-    "certificate_path": "certificates/organizers/inshiraahkhan.pdf"
-  },
-  {
-    "name": "Faiz Ahmed",
-    "email": "faiz.ahmed@mhssce.ac.in",
-    "certificate_path": "certificates/organizers/faizahmed.pdf"
-  },
-  {
-    "name": "Zehrashaikh",
-    "email": "zehrashaikh@mhssce.ac.in",
-    "certificate_path": "certificates/organizers/zehrashaikh.pdf"
-  },
-  {
-    "name": "Hannan Shemle",
-    "email": "hannan.shemle@mhssce.ac.in",
-    "certificate_path": "certificates/organizers/hannanshemle.pdf"
-  },
-  {
-    "name": "Hammad Siddique",
-    "email": "hammad.siddique@mhssce.ac.in",
-    "certificate_path": "certificates/organizers/hammadsiddique.pdf"
-  },
-  {
-    "name": "Aadarsh Sharma",
-    "email": "aadarsh.sharma@mhssce.ac.in",
-    "certificate_path": "certificates/organizers/aadarshsharma.pdf"
-  },
-  {
-    "name": "Maaz Khan",
-    "email": "maaz.khan@mhssce.ac.in",
-    "certificate_path": "certificates/organizers/maazkhan.pdf"
-  },
-  {
-    "name": "Om Mishra",
-    "email": "om.mishra@mhssce.ac.in",
-    "certificate_path": "certificates/organizers/ommishra.pdf"
-  },
-  {
-    "name": "Gulam Nabi Mundus",
-    "email": "gulamnabi.mundus@mhssce.ac.in",
-    "certificate_path": "certificates/organizers/gulamnabimundus.pdf"
-  },
-  {
     "name": "Humayun Khan",
     "email": "humayun.232863.ci@mhssce.ac.in",
     "certificate_path": "certificates/organizers/humayunkhan.pdf"
-  },
-  {
-    "name": "Rugved Patil",
-    "email": "rugved.patil@mhssce.ac.in",
-    "certificate_path": "certificates/organizers/rugvedpatil.pdf"
-  },
-  {
-    "name": "Ali Ansari",
-    "email": "ali.ansari@mhssce.ac.in",
-    "certificate_path": "certificates/organizers/aliansari.pdf"
-  },
-  {
-    "name": "Rahil Khan",
-    "email": "rahil.khan@mhssce.ac.in",
-    "certificate_path": "certificates/organizers/rahilkhan.pdf"
   }
 ]

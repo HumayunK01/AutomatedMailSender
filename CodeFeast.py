@@ -3,751 +3,318 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
 import os
-from enum import Enum
 import sys
-import time  # Added for delays
-import json
+import time
 import csv
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
+# Load environment variables
 load_dotenv()
 
-# Set UTF-8 encoding for Windows console
-if sys.platform.startswith('win'):
-    try:
-        import codecs
-        sys.stdout = codecs.getwriter('utf-8')(sys.stdout.detach())
-        sys.stderr = codecs.getwriter('utf-8')(sys.stderr.detach())
-    except:
-        # Fallback: set console to UTF-8
-        os.system('chcp 65001 >nul 2>&1')
-
-class EmailType(Enum):
-    WINNER = "winner"
-    PARTICIPANT = "participant"
-    ORGANIZER = "organizer"
-
-class CodeFeastEmailSender:
-    def __init__(self, sender_email=None, sender_password=None, event_name=None):
-        # Load from environment variables or use provided values
-        self.sender_email = sender_email or os.getenv('SENDER_EMAIL', 'programmersclub@mhssce.ac.in')
-        self.sender_password = sender_password or os.getenv('SENDER_PASSWORD', 'your_gmail_app_password_here')
-        self.event_name = event_name or os.getenv('EVENT_NAME', 'Code Feast 4.0')
-        
-        # Load timing configuration from environment
-        self.delay_between_emails = int(os.getenv('DELAY_BETWEEN_EMAILS', '30'))
-        self.delay_between_groups = int(os.getenv('DELAY_BETWEEN_GROUPS', '60'))
-        
-        # Load email server configuration
-        self.smtp_server = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
-        self.smtp_port = int(os.getenv('SMTP_PORT', '465'))
-        
-        # Debug mode
-        self.debug_mode = os.getenv('DEBUG_MODE', 'false').lower() == 'true'
-        
-        # Load dynamic event statistics from environment
-        self.total_participants = int(os.getenv('TOTAL_PARTICIPANTS', '30'))
-        self.problems_solved = int(os.getenv('PROBLEMS_SOLVED', '23'))
-        self.completion_rate = os.getenv('COMPLETION_RATE', '80%')
-        
-        # Load data file paths
-        self.winners_data_file = os.getenv('WINNERS_DATA_FILE', '')
-        self.participants_data_file = os.getenv('PARTICIPANTS_DATA_FILE', '')
-        self.organizers_data_file = os.getenv('ORGANIZERS_DATA_FILE', '')
-        
-        # Certificate path configuration
-        self.certificate_base_path = os.getenv('CERTIFICATE_BASE_PATH', 'certificates')
-        self.winners_cert_folder = os.getenv('WINNERS_CERT_FOLDER', 'winners')
-        self.participants_cert_folder = os.getenv('PARTICIPANTS_CERT_FOLDER', 'participants')
-        self.organizers_cert_folder = os.getenv('ORGANIZERS_CERT_FOLDER', 'organizers')
-        
-        # Email template customization
+# Simple email sender class
+class EmailSender:
+    def __init__(self):
+        # Simple configuration
+        self.sender_email = os.getenv('SENDER_EMAIL', 'your_email@gmail.com')
+        self.sender_password = os.getenv('SENDER_PASSWORD', 'your_gmail_app_password_here')
+        self.event_name = os.getenv('EVENT_NAME', 'MERN Workshop')
+        self.participants_file = os.getenv('PARTICIPANTS_FILE', 'data/participants.csv')
+        self.delay = int(os.getenv('DELAY_BETWEEN_EMAILS', '30'))
         self.organization_name = os.getenv('ORGANIZATION_NAME', 'Programmers Club')
-        self.organization_tagline = os.getenv('ORGANIZATION_TAGLINE', 'Making coding accessible to everyone')
-        self.copyright_year = os.getenv('COPYRIGHT_YEAR', '2025')
         
-        # Batch processing options
-        self.max_batch_size = int(os.getenv('MAX_BATCH_SIZE', '100'))
-        self.retry_failed_emails = os.getenv('RETRY_FAILED_EMAILS', 'true').lower() == 'true'
-        self.max_retries = int(os.getenv('MAX_RETRIES', '3'))
-        self.dry_run_mode = os.getenv('DRY_RUN_MODE', 'false').lower() == 'true'
-        
-    def get_email_config(self, email_type):
-        """Get email configuration based on type"""
-        configs = {
-            EmailType.WINNER: {
-                "subject_emoji": "🏆",
-                "subject_text": "Congratulations on Your Victory!",
-                "header_title": "Winner Announcement",
-                "header_subtitle": "Congratulations on your exceptional achievement!",
-                "primary_color": "#1e40af",
-                "secondary_color": "#0ea5e9",
-                "accent_color": "#f0f9ff"
-            },
-            EmailType.PARTICIPANT: {
-                "subject_emoji": "🎉",
-                "subject_text": "Thank You for Participating!",
-                "header_title": "Participation Certificate",
-                "header_subtitle": "Your contribution made this event amazing!",
-                "primary_color": "#059669",
-                "secondary_color": "#10b981",
-                "accent_color": "#f0fdf4"
-            },
-            EmailType.ORGANIZER: {
-                "subject_emoji": "🎉",
-                "subject_text": "Thank You for Organizing!",
-                "header_title": "Organizer Certificate",
-                "header_subtitle": "Appreciation for your hard work and dedication",
-                "primary_color": "#7c3aed",
-                "secondary_color": "#8b5cf6",
-                "accent_color": "#faf5ff"
-            }
-        }
-        return configs.get(email_type, configs[EmailType.PARTICIPANT])
     
-    def generate_winner_content(self, data):
-        """Generate content specific to winners"""
-        rank_section = ""
-        if data.get('rank_position'):
-            medal_emoji = "🥇" if "1st" in str(data['rank_position']) else "🥈" if "2nd" in str(data['rank_position']) else "🥉"
-            rank_section = f"""
-            <div class="content-section" style="background: #fef3c7; padding: 25px; border-radius: 12px; margin: 25px 0; border-left: 5px solid #f59e0b; text-align: center;">
-                <div class="achievement-medal" style="font-size: 48px; margin-bottom: 15px;">{medal_emoji}</div>
-                <h3 style="color: #92400e; margin: 0 0 10px; font-size: 24px; font-weight: bold;">Achievement Unlocked!</h3>
-                <p style="color: #92400e; margin: 0; font-size: 18px; font-weight: 600;">Position: {data['rank_position']}</p>
-                <p style="color: #92400e; margin: 8px 0 0; font-size: 16px;">Competition: {self.event_name}</p>
-            </div>"""
-        
+    def generate_content(self, name):
+        """Simple content generation (centered layout with improved typography)"""
         return f"""
-        <p style="margin: 0 0 25px; line-height: 1.6; color: #4b5563; font-size: 16px;">
-            We are <strong>thrilled</strong> to announce that you have emerged as a <span style="color: #1e40af; font-weight: bold;">winner</span> in {self.event_name}! 
-            Your outstanding performance demonstrated exceptional technical skills and innovative problem-solving abilities.
-        </p>
-        {rank_section}
-        <div class="content-section" style="background: #f0f9ff; padding: 25px; border-radius: 12px; margin: 25px 0; text-align: center; border: 2px solid #0ea5e9;">
-            <h3 style="color: #0c4a6e; margin: 0 0 15px; font-size: 22px;">📜 Your Winner Certificate</h3>
-            <p style="color: #0c4a6e; margin: 0 0 20px; font-size: 16px; line-height: 1.5;">
-                Your official {self.event_name} winner certificate has been attached to this email. 
-                Display it with pride!
-            </p>
+        <div style="max-width:520px; margin:0 auto; text-align:center;">
+          <h2 style="margin:0 0 12px; font-size:22px; line-height:1.35; color:#ffffff; letter-spacing:-0.2px; font-weight:800;">
+            Congratulations {name}! 🎉
+          </h2>
+          <p style="margin:0 0 12px; color:#cbd5e1; font-size:16px; line-height:1.7;">
+            You have successfully completed the <strong>{self.event_name}</strong>!
+          </p>
+          <p style="margin:0 0 12px; color:#cbd5e1; font-size:16px; line-height:1.7;">
+            Your completion certificate is attached to this email.
+          </p>
+          <p style="margin:0 0 16px; color:#cbd5e1; font-size:16px; line-height:1.7;">
+            Keep learning and building amazing projects!
+          </p>
+          <p style="margin:0; color:#94a3b8; font-size:14px; line-height:1.6;">
+            Best regards,<br>{self.organization_name} Team
+          </p>
         </div>
         """
     
-    def generate_participant_content(self, data):
-        """Generate content specific to participants"""
-        return f"""
-        <p style="margin: 0 0 25px; line-height: 1.6; color: #4b5563; font-size: 16px;">
-            Thank you for being part of {self.event_name}! Your participation and enthusiasm contributed to making this event a tremendous success. 
-            Every line of code you wrote and every problem you tackled brought value to our programming community.
-        </p>
-        <div class="content-section" style="background: #f0fdf4; padding: 25px; border-radius: 12px; margin: 25px 0; text-align: center; border: 2px solid #10b981;">
-            <h3 style="color: #047857; margin: 0 0 15px; font-size: 22px;">📜 Your Participation Certificate</h3>
-            <p style="color: #047857; margin: 0 0 20px; font-size: 16px; line-height: 1.5;">
-                Your official {self.event_name} participation certificate has been attached to this email. 
-                Keep coding and keep growing!
-            </p>
+    def generate_next_steps(self):
+        """Simple next steps (centered block, readable on mobile)"""
+        return """
+        <div style="max-width:520px; margin:12px auto 0; text-align:center;">
+          <p style="margin:0 0 10px; color:#e2e8f0; font-weight:700; letter-spacing:.2px;">Next Steps</p>
+          <p style="margin:6px 0; color:#cbd5e1; font-size:14px;">✅ Download your certificate</p>
+          <p style="margin:6px 0; color:#cbd5e1; font-size:14px;">🚀 Start building MERN projects</p>
+          <p style="margin:6px 0; color:#cbd5e1; font-size:14px;">📚 Keep learning!</p>
         </div>
         """
     
-    def generate_organizer_content(self, data):
-        """Generate content specific to organizers"""
-        stats = data.get('event_stats', {})
-        return f"""
-        <p style="margin: 0 0 25px; line-height: 1.6; color: #4b5563; font-size: 16px;">
-            Here's a comprehensive summary of {self.event_name}. Thank you for your dedication in making this event successful!
-        </p>
-        <div class="content-section" style="background: #faf5ff; padding: 25px; border-radius: 12px; margin: 25px 0; border: 2px solid #8b5cf6;">
-            <h3 style="color: #6b21a8; margin: 0 0 20px; font-size: 22px;">📊 Event Statistics</h3>
-            <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                <div class="stats-item" style="background: white; padding: 15px; border-radius: 8px; text-align: center;">
-                    <div style="font-size: 24px; font-weight: bold; color: #6b21a8;">{stats.get('total_participants', self.total_participants)}</div>
-                    <div style="color: #6b21a8; font-size: 14px;">Total Participants</div>
-                </div>
-                <div class="stats-item" style="background: white; padding: 15px; border-radius: 8px; text-align: center;">
-                    <div style="font-size: 24px; font-weight: bold; color: #6b21a8;">{stats.get('problems_solved', self.problems_solved)}</div>
-                    <div style="color: #6b21a8; font-size: 14px;">Problems Solved</div>
-                </div>
-                <div class="stats-item" style="background: white; padding: 15px; border-radius: 8px; text-align: center;">
-                    <div style="font-size: 24px; font-weight: bold; color: #6b21a8;">{stats.get('completion_rate', self.completion_rate)}</div>
-                    <div style="color: #6b21a8; font-size: 14px;">Completion Rate</div>
-                </div>
-            </div>
-        </div>
-        <div class="content-section" style="background: #f0f4ff; padding: 25px; border-radius: 12px; margin: 25px 0; text-align: center; border: 2px solid #8b5cf6;">
-            <h3 style="color: #6b21a8; margin: 0 0 15px; font-size: 22px;">📜 Your Organizer Certificate</h3>
-            <p style="color: #6b21a8; margin: 0 0 20px; font-size: 16px; line-height: 1.5;">
-                Your official {self.event_name} organizer certificate has been attached to this email. 
-                Thank you for your leadership and dedication!
-            </p>
-        </div>
-        """
+    def generate_html_template(self, name):
+        """User-specified Web3 template (fully responsive and centered)"""
+        return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="x-apple-disable-message-reformatting">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>{self.event_name} - Certificate of Completion</title>
+  <!--[if mso]>
+  <style type="text/css">
+    body, table, td {{font-family: Arial, sans-serif !important;}}
+  </style>
+  <![endif]-->
+  <style>
+    * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+    body {{ -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }}
     
-    def generate_next_steps(self, email_type, data):
-        """Generate next steps based on email type"""
-        steps = {
-            EmailType.WINNER: [
-                "🏆 Download and save your winner certificate",
-                "📱 Share your achievement on LinkedIn and social media",
-                "🏷️ Tag @Programmers Club in your posts",
-                "📌 Use hashtags: #CodeFeast4.0 #Programming #Winner"
-            ],
-            EmailType.PARTICIPANT: [
-                "📜 Download your participation certificate",
-                "📚 Continue practicing on coding platforms",
-                "🌟 Follow us for upcoming events and workshops",
-                "📱 Share your coding journey on social media"
-            ],
-            EmailType.ORGANIZER: [
-                "📜 Download your organizer certificate",
-                "📧 Send follow-up communications to winners",
-                "📋 Document lessons learned for future events",
-                "🎯 Plan improvements for the next iteration",
-                "🤝 Coordinate with sponsors and partners"
-            ]
-        }
-        
-        step_list = steps.get(email_type, steps[EmailType.PARTICIPANT])
-        step_html = "".join([f'<p style="color: #374151; margin: 0 0 12px; font-size: 16px; line-height: 1.5;">{step}</p>' for step in step_list])
-        
-        return f"""
-        <div style="background: #f8fafc; padding: 25px; border-radius: 12px; margin: 25px 0; border: 1px solid #e2e8f0;">
-            <h3 style="color: #1f2937; margin: 0 0 20px; font-size: 20px;">🚀 Next Steps</h3>
-            {step_html}
-        </div>
-        """
+    /* Mobile responsiveness */
+    @media only screen and (max-width: 600px) {{
+      .outer-pad {{ padding: 12px !important; }}
+      .container {{ width: 100% !important; max-width: 100% !important; }}
+      .card {{ border-radius: 12px !important; }}
+      .px {{ padding: 24px 20px !important; }}
+      .title {{ font-size: 22px !important; line-height: 1.3 !important; }}
+      .eyebrow {{ font-size: 11px !important; padding: 5px 11px !important; }}
+      .hero-text {{ font-size: 13px !important; }}
+      .chips span {{ 
+        display: inline-block !important; 
+        margin: 4px 5px 4px 0 !important;
+        font-size: 11px !important;
+        padding: 5px 9px !important;
+      }}
+      .divider-pad {{ padding: 0 20px !important; }}
+      .footer {{ font-size: 11px !important; padding: 16px 20px !important; line-height: 1.5 !important; }}
+      .gradient-bar {{ height: 3px !important; }}
+    }}
     
-    def generate_html_template(self, email_type, data):
-        """Generate complete HTML template based on email type and data"""
-        config = self.get_email_config(email_type)
-        
-        # Generate type-specific content
-        content_generators = {
-            EmailType.WINNER: self.generate_winner_content,
-            EmailType.PARTICIPANT: self.generate_participant_content,
-            EmailType.ORGANIZER: self.generate_organizer_content
-        }
-        
-        main_content = content_generators[email_type](data)
-        next_steps = self.generate_next_steps(email_type, data)
-        
-        html_template = f"""
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <meta name="format-detection" content="telephone=no">
-            <meta name="x-apple-disable-message-reformatting">
-            <meta http-equiv="X-UA-Compatible" content="IE=edge">
-            <title>{self.event_name} - {config['header_title']}</title>
-            <!--[if mso]>
-            <noscript>
-                <xml>
-                    <o:OfficeDocumentSettings>
-                        <o:PixelsPerInch>96</o:PixelsPerInch>
-                    </o:OfficeDocumentSettings>
-                </xml>
-            </noscript>
-            <![endif]-->
-            <style type="text/css">
-                /* Reset styles */
-                body, table, td, p, a, li, blockquote {{
-                    -webkit-text-size-adjust: 100%;
-                    -ms-text-size-adjust: 100%;
-                }}
-                table, td {{
-                    mso-table-lspace: 0pt;
-                    mso-table-rspace: 0pt;
-                }}
-                img {{
-                    -ms-interpolation-mode: bicubic;
-                    max-width: 100%;
-                    height: auto;
-                }}
-                
-                /* Responsive styles */
-                @media screen and (max-width: 600px) {{
-                    .email-container {{
-                        width: 100% !important;
-                        margin: 0 !important;
-                        border-radius: 0 !important;
-                    }}
-                    .header-section {{
-                        padding: 30px 20px !important;
-                    }}
-                    .header-title {{
-                        font-size: 24px !important;
-                        line-height: 1.2 !important;
-                    }}
-                    .header-subtitle {{
-                        font-size: 16px !important;
-                    }}
-                    .header-description {{
-                        font-size: 14px !important;
-                    }}
-                    .main-content {{
-                        padding: 25px 20px !important;
-                    }}
-                    .greeting-title {{
-                        font-size: 20px !important;
-                        line-height: 1.3 !important;
-                    }}
-                    .content-section {{
-                        padding: 20px !important;
-                        margin: 20px 0 !important;
-                    }}
-                    .stats-grid {{
-                        display: block !important;
-                    }}
-                    .stats-item {{
-                        margin-bottom: 15px !important;
-                        display: block !important;
-                    }}
-                    .cta-button {{
-                        padding: 14px 20px !important;
-                        font-size: 16px !important;
-                        display: block !important;
-                        width: 80% !important;
-                        max-width: 200px !important;
-                        margin: 20px auto !important;
-                    }}
-                    .footer-section {{
-                        padding: 15px 20px !important;
-                    }}
-                    .date-badge {{
-                        position: static !important;
-                        margin: 0 auto 15px !important;
-                        display: inline-block !important;
-                    }}
-                    .achievement-medal {{
-                        font-size: 40px !important;
-                    }}
-                    .signature-section {{
-                        padding-top: 25px !important;
-                        margin-top: 30px !important;
-                    }}
-                }}
-                
-                @media screen and (max-width: 480px) {{
-                    .email-container {{
-                        margin: 5px !important;
-                    }}
-                    .header-section {{
-                        padding: 25px 15px !important;
-                    }}
-                    .main-content {{
-                        padding: 20px 15px !important;
-                    }}
-                    .content-section {{
-                        padding: 15px !important;
-                    }}
-                    .header-title {{
-                        font-size: 22px !important;
-                    }}
-                    .achievement-medal {{
-                        font-size: 36px !important;
-                    }}
-                }}
-                
-                /* Dark mode support */
-                @media (prefers-color-scheme: dark) {{
-                    .email-bg {{
-                        background: #1f2937 !important;
-                    }}
-                    .email-container {{
-                        background: #374151 !important;
-                    }}
-                    .main-content {{
-                        color: #f9fafb !important;
-                    }}
-                }}
-            </style>
-        </head>
-        <body class="email-bg" style="margin: 0; padding: 0; font-family: 'Arial', 'Helvetica', sans-serif; line-height: 1.6; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); min-height: 100vh; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;">
-            <div style="padding: 10px;">
-                <div class="email-container" style="max-width: 650px; margin: 10px auto; background: #ffffff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); overflow: hidden;">
-                    
-                    <!-- Header Section -->
-                    <div class="header-section" style="background: linear-gradient(135deg, {config['primary_color']} 0%, {config['secondary_color']} 100%); padding: 40px 30px; text-align: center; position: relative;">
-                        <h1 class="header-title" style="color: #ffffff; margin: 0 0 10px; font-size: 28px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.1); line-height: 1.2;">{self.event_name}</h1>
-                        <p class="header-subtitle" style="color: #e2e8f0; margin: 0 0 15px; font-size: 18px; font-weight: 600;">{config['header_title']}</p>
-                        <p class="header-description" style="color: #cbd5e1; margin: 0; font-size: 15px; line-height: 1.5; max-width: 400px; margin: 0 auto;">{config['header_subtitle']}</p>
-                    </div>
-                    
-                    <!-- Main Content -->
-                    <div class="main-content" style="padding: 35px 30px; color: #333333;">
-                        <!-- Personalized Greeting -->
-                        <div style="text-align: center; margin-bottom: 30px;">
-                            <h2 class="greeting-title" style="color: #1f2937; font-weight: 700; font-size: 22px; margin: 0 0 10px; line-height: 1.3;">Hello {data.get('name', 'Participant')}! 👋</h2>
-                            <div style="width: 60px; height: 4px; background: {config['secondary_color']}; margin: 0 auto; border-radius: 2px;"></div>
-                        </div>
-                        
-                        {main_content}
-                        {next_steps}
-                        
-                        <!-- Signature -->
-                        <div class="signature-section" style="margin-top: 35px; padding-top: 30px; border-top: 2px solid #e5e7eb; text-align: center;">
-                            <p style="margin: 0 0 5px; color: #1f2937; font-weight: 600; font-size: 16px;">With appreciation,</p>
-                            <p style="margin: 0 0 5px; color: {config['primary_color']}; font-weight: 800; font-size: 20px;">{self.event_name} Team</p>
-                            <p style="margin: 0 0 5px; color: #6b7280; font-size: 14px; font-weight: 600;">{self.organization_name}</p>
-                            <p style="margin: 10px 0 0; color: #9ca3af; font-size: 12px;">{self.organization_tagline}</p>
-                        </div>
-                    </div>
-                    
-                    <!-- Footer -->
-                    <div class="footer-section" style="background: #f9fafb; padding: 20px 30px; border-top: 1px solid #e5e7eb; text-align: center;">
-                        <p style="margin: 0; color: #6b7280; font-size: 12px; line-height: 1.4;">
-                            This email was sent by {self.event_name} Team. If you have any questions, please contact us.<br>
-                            © {self.copyright_year} {self.organization_name}. All rights reserved.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </body>
-        </html>
-        """
-        
-        return html_template
+    /* Disable auto-link styling */
+    a[x-apple-data-detectors] {{
+      color: inherit !important;
+      text-decoration: none !important;
+      font-size: inherit !important;
+      font-family: inherit !important;
+      font-weight: inherit !important;
+      line-height: inherit !important;
+    }}
     
-    def send_email(self, email_type, recipient_data, attachment_path=None):
-        """Send email based on type and recipient data"""
-        # Dry run mode - just log what would be sent
-        if self.dry_run_mode:
-            print(f"[DRY RUN] Would send {email_type.value} email to {recipient_data['name']} ({recipient_data['email']})")
-            if attachment_path:
-                print(f"[DRY RUN] Would attach certificate: {attachment_path}")
-            return True
-            
-        config = self.get_email_config(email_type)
+    /* Dark mode support */
+    @media (prefers-color-scheme: dark) {{
+      .dark-mode-bg {{ background: #0b0f1a !important; }}
+      .dark-mode-card {{ background: #0e1320 !important; }}
+    }}
+  </style>
+</head>
+<body style="margin:0; padding:0; background:#0b0f1a; color:#e5e7eb; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height:1.6;">
+  <!-- Preheader text (hidden) -->
+  <div style="display:none; max-height:0; overflow:hidden; mso-hide:all;">
+    🎉 Congratulations on completing {self.event_name}! Your certificate is ready.
+  </div>
+  
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#0b0f1a;" class="dark-mode-bg">
+    <tr>
+      <td align="center" class="outer-pad" style="padding:32px 24px;">
+        <!-- Main Container -->
+        <table role="presentation" width="640" align="center" cellspacing="0" cellpadding="0" border="0" class="container card" style="width:100%; max-width:640px; background:#0e1320; border-radius:20px; border:1px solid rgba(124,58,237,0.4); box-shadow:0 0 0 1px rgba(0,229,255,0.08), 0 20px 40px -12px rgba(124,58,237,0.3), 0 8px 20px -8px rgba(0,0,0,0.4); overflow:hidden; margin:0 auto;">
+          
+          <!-- Gradient Bar -->
+          <tr>
+            <td class="gradient-bar" style="padding:0; height:4px; background:linear-gradient(90deg, #00e5ff 0%, #7c3aed 50%, #00e5ff 100%); background-size: 200% 100%;"></td>
+          </tr>
+          
+          <!-- Header Section -->
+          <tr>
+            <td class="px" style="padding:36px 32px 12px 32px; text-align:center;">
+              <div class="eyebrow" style="display:inline-block; padding:7px 14px; border:1px solid rgba(0,229,255,0.4); border-radius:999px; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:#a5f3fc; background:rgba(2,6,23,0.7); font-weight:600; box-shadow:0 0 20px rgba(0,229,255,0.15);">
+                ✨ Certificate of Completion
+              </div>
+              
+              <h1 class="title" style="margin:20px 0 10px; font-size:28px; line-height:1.2; color:#ffffff; letter-spacing:-0.5px; font-weight:800; text-shadow:0 2px 10px rgba(124,58,237,0.3);">
+                {self.event_name}
+              </h1>
+              
+              <p class="hero-text" style="margin:0 0 20px; color:#94a3b8; font-size:15px; line-height:1.6;">
+                <strong style="color:#e5e7eb; font-weight:700;">{name}</strong> 👋 — you've officially completed the {self.event_name}.<br>
+                <span style="color:#a5f3fc;">Welcome to the builders.</span>
+              </p>
+            </td>
+          </tr>
+          
+          <!-- Divider -->
+          <tr>
+            <td class="divider-pad" style="padding:0 32px;">
+              <div style="height:1px; width:100%; background:linear-gradient(90deg, rgba(0,229,255,0) 0%, rgba(0,229,255,0.6) 50%, rgba(0,229,255,0) 100%);"></div>
+            </td>
+          </tr>
+          
+          <!-- Content Section -->
+          <tr>
+            <td class="px" style="padding:28px 32px 8px 32px;">
+              {self.generate_content(name)}
+              
+              <!-- Tech Stack Chips -->
+              <div class="chips" style="margin:22px 0 8px; text-align:center; line-height:1.8;">
+                <span style="display:inline-block; margin:4px 6px 4px 0; padding:7px 12px; border-radius:10px; font-size:12px; font-weight:600; color:#a5f3fc; background:rgba(3,105,161,0.12); border:1px solid rgba(3,105,161,0.4); box-shadow:0 2px 8px rgba(3,105,161,0.15); transition:all 0.3s;">
+                  MongoDB
+                </span>
+                <span style="display:inline-block; margin:4px 6px 4px 0; padding:7px 12px; border-radius:10px; font-size:12px; font-weight:600; color:#c7d2fe; background:rgba(67,56,202,0.15); border:1px solid rgba(67,56,202,0.4); box-shadow:0 2px 8px rgba(67,56,202,0.15); transition:all 0.3s;">
+                  Express
+                </span>
+                <span style="display:inline-block; margin:4px 6px 4px 0; padding:7px 12px; border-radius:10px; font-size:12px; font-weight:600; color:#6ee7b7; background:rgba(6,78,59,0.15); border:1px solid rgba(6,78,59,0.4); box-shadow:0 2px 8px rgba(6,78,59,0.15); transition:all 0.3s;">
+                  React
+                </span>
+                <span style="display:inline-block; margin:4px 6px 4px 0; padding:7px 12px; border-radius:10px; font-size:12px; font-weight:600; color:#fca5a5; background:rgba(127,29,29,0.15); border:1px solid rgba(127,29,29,0.4); box-shadow:0 2px 8px rgba(127,29,29,0.15); transition:all 0.3s;">
+                  Node.js
+                </span>
+              </div>
+              
+              <!-- Next Steps Section -->
+              <div style="margin-top:24px;">
+                {self.generate_next_steps()}
+              </div>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td class="footer" style="padding:20px 28px; border-top:1px solid rgba(148,163,184,0.15); text-align:center; color:#94a3b8; font-size:12px; line-height:1.7; background:rgba(2,6,23,0.4);">
+              <div style="margin-bottom:8px; color:#cbd5e1;">
+                📎 <strong style="color:#e5e7eb;">Attached:</strong> PDF certificate for {name}
+              </div>
+              <div style="color:#64748b;">
+                If the button doesn't work, open the attachment directly.
+              </div>
+              <div style="margin-top:12px; padding-top:12px; border-top:1px solid rgba(148,163,184,0.1); color:#64748b;">
+                Built with <span style="color:#f87171;">❤️</span> by <strong style="color:#94a3b8;">{self.organization_name}</strong>
+              </div>
+            </td>
+          </tr>
+        </table>
         
-        # Create message container
-        msg = MIMEMultipart('alternative')
-        msg['Subject'] = f"{self.event_name} - {config['subject_text']} {config['subject_emoji']}"
-        msg['From'] = f"{self.event_name} Team <{self.sender_email}>"
-        msg['To'] = recipient_data['email']
-        
+        <!-- Spacer for email clients -->
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top:16px;">
+          <tr>
+            <td style="text-align:center; color:#64748b; font-size:11px; padding:0 20px;">
+              This email was sent because you completed {self.event_name}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
+    
+    def send_email(self, name, email, certificate_path=None):
+        """Send simple email"""
+        # Create message
+        msg = MIMEMultipart()
+        msg['Subject'] = f"{self.event_name} - Certificate"
+        msg['From'] = self.sender_email
+        msg['To'] = email
+
         # Generate HTML content
-        html_content = self.generate_html_template(email_type, recipient_data)
-        html_part = MIMEText(html_content, 'html')
-        msg.attach(html_part)
-        
-        # Attach file if provided
-        if attachment_path and os.path.exists(attachment_path):
+        html_content = self.generate_html_template(name)
+        msg.attach(MIMEText(html_content, 'html', 'utf-8'))
+
+        # Attach certificate if provided
+        if certificate_path and os.path.exists(certificate_path):
             try:
-                with open(attachment_path, "rb") as f:
+                with open(certificate_path, "rb") as f:
                     file_attachment = MIMEApplication(f.read(), _subtype="pdf")
-                    filename = f"{recipient_data['name'].replace(' ', '_')}_{self.event_name.replace(' ', '_')}_Certificate.pdf"
+                    filename = f"{name.replace(' ', '_')}_Certificate.pdf"
                     file_attachment.add_header('Content-Disposition', 'attachment', filename=filename)
                     msg.attach(file_attachment)
-                    print(f"[SUCCESS] Certificate attached: {filename}")
+                    print(f"[ATTACH] Certificate: {filename}")
             except Exception as e:
-                print(f"[ERROR] Error attaching certificate: {e}")
-        elif attachment_path:
-            print(f"[WARNING] Certificate file not found: {attachment_path}")
-        
+                print(f"[ERROR] Could not attach certificate: {e}")
+
         try:
-            # Create secure connection and send email
-            server = smtplib.SMTP_SSL(self.smtp_server, self.smtp_port)
+            # Send email
+            server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
             server.login(self.sender_email, self.sender_password)
-            server.sendmail(self.sender_email, recipient_data['email'], msg.as_string())
+            server.sendmail(self.sender_email, email, msg.as_string())
             server.quit()
-            print(f"[SUCCESS] Email sent to {recipient_data['name']} ({recipient_data['email']})")
+            print(f"[SENT] Email sent to {name} ({email})")
             return True
-            
         except Exception as e:
-            print(f"[ERROR] Error sending email to {recipient_data['name']}: {e}")
+            print(f"[ERROR] Failed to send to {name}: {e}")
             return False
     
 
 
-    def send_batch_emails(self, email_type, recipients_data):
-        """Send batch emails of specified type with delays to prevent rate limiting"""
-        # Split into batches if max_batch_size is set
-        if len(recipients_data) > self.max_batch_size:
-            print(f"[INFO] Splitting {len(recipients_data)} emails into batches of {self.max_batch_size}")
-            all_success = 0
-            all_failed = []
-            
-            for i in range(0, len(recipients_data), self.max_batch_size):
-                batch = recipients_data[i:i + self.max_batch_size]
-                batch_num = (i // self.max_batch_size) + 1
-                total_batches = (len(recipients_data) + self.max_batch_size - 1) // self.max_batch_size
-                
-                print(f"\n[BATCH {batch_num}/{total_batches}] Processing {len(batch)} emails...")
-                success_count, failed_emails = self._send_batch_chunk(email_type, batch)
-                all_success += success_count
-                all_failed.extend(failed_emails)
-                
-                # Delay between batches (except for the last batch)
-                if i + self.max_batch_size < len(recipients_data):
-                    print(f"[WAIT] Waiting {self.delay_between_groups} seconds between batches...")
-                    time.sleep(self.delay_between_groups)
-            
-            return all_success, all_failed
-        else:
-            return self._send_batch_chunk(email_type, recipients_data)
-    
-    def _send_batch_chunk(self, email_type, recipients_data):
-        """Send a chunk of emails with individual delays"""
+    def send_all_emails(self, participants_data):
+        """Send emails to all participants"""
         success_count = 0
-        failed_emails = []  # Track failed emails
-        total_count = len(recipients_data)
-        
-        print(f"\n[INFO] Starting batch email send for {email_type.value}s...")
-        print(f"[INFO] Total emails to send: {total_count}")
-        print(f"[INFO] Estimated time: {total_count * self.delay_between_emails} seconds ({total_count * self.delay_between_emails // 60} minutes {total_count * self.delay_between_emails % 60} seconds)\n")
-        
-        for i, recipient in enumerate(recipients_data):
-            email_sent = False
-            try:
-                success = self.send_email(
-                    email_type,
-                    recipient,
-                    recipient.get('certificate_path')
-                )
-                if success:
-                    success_count += 1
-                    email_sent = True
-                    print(f"[PROGRESS] {i+1}/{total_count} emails sent successfully")
-                    
-                    # Add delay between emails (except for the last one)
-                    if i < total_count - 1:
-                        print(f"[WAIT] Waiting {self.delay_between_emails} seconds before next email...")
-                        time.sleep(self.delay_between_emails)
-                        
-            except UnicodeEncodeError as e:
-                print(f"[ERROR] Encoding error for {recipient['name']}: {str(e)}")
-                # Try to send without emoji in subject
-                try:
-                    config = self.get_email_config(email_type)
-                    config['subject_emoji'] = ''  # Remove emoji
-                    success = self.send_email(
-                        email_type,
-                        recipient,
-                        recipient.get('certificate_path')
-                    )
-                    if success:
-                        success_count += 1
-                        email_sent = True
-                        print(f"[PROGRESS] {i+1}/{total_count} emails sent successfully (retry)")
-                        
-                        # Add delay between emails (except for the last one)
-                        if i < total_count - 1:
-                            print(f"[WAIT] Waiting {self.delay_between_emails} seconds before next email...")
-                            time.sleep(self.delay_between_emails)
-                            
-                except Exception as e2:
-                    failed_emails.append({
-                        "name": recipient['name'],
-                        "email": recipient['email'],
-                        "error": f"Encoding retry failed: {e2}"
-                    })
-                    print(f"[ERROR] Failed to send to {recipient['name']} (retry): {e2}")
-            except Exception as e:
-                failed_emails.append({
-                    "name": recipient['name'],
-                    "email": recipient['email'],
-                    "error": str(e)
-                })
-                print(f"[ERROR] Failed to send to {recipient['name']}: {e}")
-            
-            # If email wasn't sent through any method, add to failed list
-            if not email_sent:
-                # Check if already added to avoid duplicates
-                if not any(f['email'] == recipient['email'] for f in failed_emails):
-                    failed_emails.append({
-                        "name": recipient['name'],
-                        "email": recipient['email'],
-                        "error": "Unknown error - email not sent"
-                    })
-        
-        print(f"\n[SUMMARY] {success_count}/{total_count} emails sent successfully!")
-        
-        # Display failed emails if any
-        if failed_emails:
-            print(f"\n[FAILED EMAILS DEBUG] {len(failed_emails)} emails failed to send:")
-            print("=" * 80)
-            for i, failed in enumerate(failed_emails, 1):
-                print(f"{i}. Name: {failed['name']}")
-                print(f"   Email: {failed['email']}")
-                print(f"   Error: {failed['error']}")
-                print("-" * 60)
-        else:
-            print(f"\n[SUCCESS] All {email_type.value} emails sent successfully! 🎉")
-        
-        return success_count, failed_emails
+        total_count = len(participants_data)
 
-    def load_data_from_file(self, file_path, data_type):
-        """Load recipient data from JSON or CSV file"""
-        if not file_path or not os.path.exists(file_path):
+        print(f"Sending emails to {total_count} participants...")
+
+        for i, participant in enumerate(participants_data):
+            name = participant.get('name', '')
+            email = participant.get('email', '')
+            certificate_path = participant.get('certificate_path')
+            if not email:
+                print(f"[SKIP] Missing email for {name}, skipping.")
+                continue
+
+            if self.send_email(name, email, certificate_path):
+                success_count += 1
+
+            # Delay between emails
+            if i < total_count - 1:
+                print(f"Waiting {self.delay} seconds...")
+                time.sleep(self.delay)
+
+        print(f"\nSent {success_count}/{total_count} emails successfully!")
+        return success_count
+
+    def load_participants(self):
+        """Load participants from CSV file"""
+        if not os.path.exists(self.participants_file):
+            print(f"Error: File {self.participants_file} not found!")
             return []
-        
+
+        participants = []
         try:
-            file_extension = os.path.splitext(file_path)[1].lower()
-            
-            if file_extension == '.json':
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    if isinstance(data, list):
-                        # Use certificate paths directly from JSON file
-                        for item in data:
-                            # If certificate_path is not provided in JSON, generate it
-                            if 'certificate_path' not in item:
-                                cert_folder = getattr(self, f"{data_type}_cert_folder")
-                                cert_filename = self.generate_certificate_filename(item['name'])
-                                item['certificate_path'] = os.path.join(self.certificate_base_path, cert_folder, cert_filename)
-                        return data
-                    return []
-            
-            elif file_extension == '.csv':
-                data = []
-                with open(file_path, 'r', encoding='utf-8', newline='') as f:
-                    reader = csv.DictReader(f)
-                    for row in reader:
-                        # Use certificate path from CSV if provided, otherwise generate it
-                        if 'certificate_path' not in row:
-                            cert_folder = getattr(self, f"{data_type}_cert_folder")
-                            cert_filename = self.generate_certificate_filename(row['name'])
-                            row['certificate_path'] = os.path.join(self.certificate_base_path, cert_folder, cert_filename)
-                        
-                        # Add event stats for organizers if not present
-                        if data_type == 'organizers' and 'event_stats' not in row:
-                            row['event_stats'] = {
-                                'total_participants': self.total_participants,
-                                'problems_solved': self.problems_solved,
-                                'completion_rate': self.completion_rate
-                            }
-                        data.append(row)
-                return data
-            
+            with open(self.participants_file, 'r', newline='', encoding='utf-8-sig') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    name = (row.get('name') or '').strip()
+                    email = (row.get('email') or '').strip()
+                    cert_path = (row.get('certificate_path') or '').strip()
+                    if name and email:
+                        participants.append({
+                            'name': name,
+                            'email': email,
+                            'certificate_path': cert_path
+                        })
+                    else:
+                        print(f"Skipping row with missing name or email: {row}")
+            print(f"Loaded {len(participants)} participants from {self.participants_file}")
+            return participants
         except Exception as e:
-            print(f"[ERROR] Failed to load data from {file_path}: {e}")
+            print(f"Error reading file: {e}")
             return []
-        
-        return []
-    
-    def generate_certificate_filename(self, name):
-        """Generate certificate filename from person's name"""
-        # Remove spaces, convert to lowercase, and add .pdf extension
-        filename = name.lower().replace(' ', '').replace('.', '') + '.pdf'
-        return filename
 
-    def get_recipients_data(self):
-        """Get all recipient data from files only - no hardcoded fallbacks"""
-        winners = self.load_data_from_file(self.winners_data_file, 'winners')
-        participants = self.load_data_from_file(self.participants_data_file, 'participants')
-        organizers = self.load_data_from_file(self.organizers_data_file, 'organizers')
-        
-        # Validate that all required files are loaded
-        if not winners and self.winners_data_file:
-            print(f"[WARNING] No winners data loaded from {self.winners_data_file}")
-        if not participants and self.participants_data_file:
-            print(f"[WARNING] No participants data loaded from {self.participants_data_file}")
-        if not organizers and self.organizers_data_file:
-            print(f"[WARNING] No organizers data loaded from {self.organizers_data_file}")
-            
-        # Show data file usage status
-        print(f"[INFO] Data loaded: {len(winners)} winners, {len(participants)} participants, {len(organizers)} organizers")
-        if not any([winners, participants, organizers]):
-            print("[ERROR] No data files specified or loaded! Please check your .env configuration.")
-            print("[INFO] Required environment variables:")
-            print("  - WINNERS_DATA_FILE=data/winners.csv")
-            print("  - PARTICIPANTS_DATA_FILE=data/participants.csv") 
-            print("  - ORGANIZERS_DATA_FILE=data/organizers.json")
-            
-        return winners, participants, organizers
-
-
-
-# Example usage
+# Main execution
 if __name__ == "__main__":
-    # Initialize email sender (loads configuration from .env file)
-    sender = CodeFeastEmailSender()
-    
-    # Load recipient data dynamically (from files or fallback to defaults)
-    winners_data, participants_data, organizers_data = sender.get_recipients_data()
-    
-    # Track all failed emails across all groups
-    all_failed_emails = []
-    total_success = 0
-    total_emails = len(winners_data) + len(participants_data) + len(organizers_data)
-    
-    # Validate we have data to send
-    if total_emails == 0:
-        print("\n❌ [ERROR] No email data loaded! Cannot proceed with campaign.")
-        print("[INFO] Please ensure data files are properly configured in your .env file:")
-        print("   WINNERS_DATA_FILE=data/winners.csv")
-        print("   PARTICIPANTS_DATA_FILE=data/participants.csv")
-        print("   ORGANIZERS_DATA_FILE=data/organizers.json")
-        exit(1)
-    
-    # Check which groups have data and prepare to send emails
-    groups_to_send = []
-    
-    if len(winners_data) > 0:
-        groups_to_send.append(("🏆 WINNERS", EmailType.WINNER, winners_data))
-        print(f"✅ Winners group: {len(winners_data)} emails will be sent")
-    else:
-        print("⏭️  Winners group: No data found - skipping")
-    
-    if len(participants_data) > 0:
-        groups_to_send.append(("🎉 PARTICIPANTS", EmailType.PARTICIPANT, participants_data))
-        print(f"✅ Participants group: {len(participants_data)} emails will be sent")
-    else:
-        print("⏭️  Participants group: No data found - skipping")
-    
-    if len(organizers_data) > 0:
-        groups_to_send.append(("👥 ORGANIZERS", EmailType.ORGANIZER, organizers_data))
-        print(f"✅ Organizers group: {len(organizers_data)} emails will be sent")
-    else:
-        print("⏭️  Organizers group: No data found - skipping")
-    
-    # Check if we have any groups to send emails to
-    if not groups_to_send:
-        print("\n" + "=" * 60)
-        print("❌ [NO EMAILS TO SEND] No data found in any group!")
-        print("=" * 60)
-        print("📋 Please check your data files:")
-        print("   - Winners: data/winners.csv")
-        print("   - Participants: data/participants.csv") 
-        print("   - Organizers: data/organizers.json")
-        print("\n💡 Make sure the files exist and contain valid data.")
-        exit(0)
-    
-    # Send emails for each group
-    for i, (group_name, email_type, data) in enumerate(groups_to_send):
-        if i > 0:  # Add break between groups (not before first group)
-            print("\n" + "=" * 60)
-            print(f"⏰ BREAK: Waiting {sender.delay_between_groups} seconds between groups...")
-            time.sleep(sender.delay_between_groups)
-        
-        print("\n" + "=" * 60)
-        print(f"{group_name} EMAILS ({len(data)} emails)")
-        success_count, failed_emails = sender.send_batch_emails(email_type, data)
-        total_success += success_count
-        all_failed_emails.extend(failed_emails)
-    
-    print("\n" + "=" * 80)
-    print("🎊 [CAMPAIGN COMPLETE] All email campaigns finished!")
-    print("=" * 80)
-    print(f"📧 Total emails processed: {total_emails}")
-    print(f"✅ Successfully sent: {total_success}")
-    print(f"❌ Failed to send: {len(all_failed_emails)}")
-    print(f"📈 Success rate: {(total_success/total_emails)*100:.1f}%")
-    
-    # Display comprehensive failed emails summary
-    if all_failed_emails:
-        print(f"\n🚨 [FAILED EMAILS SUMMARY] {len(all_failed_emails)} emails need attention:")
-        print("=" * 80)
-        for i, failed in enumerate(all_failed_emails, 1):
-            print(f"{i}. Name: {failed['name']}")
-            print(f"   Email: {failed['email']}")
-            print(f"   Error: {failed['error']}")
-            print("-" * 60)
-        print("\n💡 [RETRY SUGGESTION] You can copy these email addresses and try sending manually or re-run the script.")
-    else:
-        print(f"\n🎉 [PERFECT SUCCESS] All {total_emails} emails sent successfully!")
-        print("🚀 No failed emails - Campaign completed flawlessly!")
-    
-    print("\n⏰ Campaign execution completed!")
+    # Create email sender
+    sender = EmailSender()
+
+    # Load participants
+    participants = sender.load_participants()
+
+    if not participants:
+        print("No participants to send emails to. Exiting.")
+        sys.exit(1)
+
+    # Send emails
+    sender.send_all_emails(participants)
