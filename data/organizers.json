@@ -1,7 +1,132 @@
 [
   {
+    "name": "Aaliya Idrisi",
+    "email": "aaliya.241619.et@mhssce.ac.in",
+    "certificate_path": "certificates/organizers/aaliyaidrisi.jpg"
+  },
+  {
+    "name": "Fatima Zahra Shaikh",
+    "email": "fatima.241844.ci@mhssce.ac.in",
+    "certificate_path": "certificates/organizers/fatimazahrashaikh.jpg"
+  },
+  {
+    "name": "Inshiraah Khan",
+    "email": "inshiraah.232263.co@mhssce.ac.in",
+    "certificate_path": "certificates/organizers/inshiraahkhan.jpg"
+  },
+  {
+    "name": "Mohammed Faiz Ahmed",
+    "email": "faiz.221231.co@mhssce.ac.in",
+    "certificate_path": "certificates/organizers/mohammedfaizahmed.jpg"
+  },
+  {
+    "name": "Zehra Shaikh",
+    "email": "zehra.231757.cs@mhssce.ac.in",
+    "certificate_path": "certificates/organizers/zehrashaikh.jpg"
+  },
+  {
+    "name": "Hannan Shemle",
+    "email": "hannan.231211.co@mhssce.ac.in",
+    "certificate_path": "certificates/organizers/hannanshemle.jpg"
+  },
+  {
+    "name": "Hammad Siddique",
+    "email": "hammad.241257.co@mhssce.ac.in",
+    "certificate_path": "certificates/organizers/hammadsiddique.jpg"
+  },
+  {
+    "name": "Adarsh Sharma",
+    "email": "adarsh.241855.ci@mhssce.ac.in",
+    "certificate_path": "certificates/organizers/adarshsharma.jpg"
+  },
+  {
+    "name": "Maaz Khan",
+    "email": "maaz.242267.co@mhssce.ac.in",
+    "certificate_path": "certificates/organizers/maazkhan.jpg"
+  },
+  {
+    "name": "Om Mishra",
+    "email": "om.231830.ci@mhssce.ac.in",
+    "certificate_path": "certificates/organizers/ommishra.jpg"
+  },
+  {
+    "name": "Gulam Nabi Mundus",
+    "email": "gulamnabi.232865.ci@mhssce.ac.in",
+    "certificate_path": "certificates/organizers/gulamnabimundas.jpg"
+  },
+  {
     "name": "Humayun Khan",
     "email": "humayun.232863.ci@mhssce.ac.in",
-    "certificate_path": "certificates/organizers/humayunkhan.pdf"
+    "certificate_path": "certificates/organizers/humayunkhan.jpg"
+  },
+  {
+    "name": "Rugved Patil",
+    "email": "rugved.221235.co@mhssce.ac.in",
+    "certificate_path": "certificates/organizers/rugvedpatil.jpg"
+  },
+  {
+    "name": "Mohd Ali Ansari",
+    "email": "ali.221204.co@mhssce.ac.in",
+    "certificate_path": "certificates/organizers/mohdaliansari.jpg"
+  },
+  {
+    "name": "Rahil Khan",
+    "email": "rahil.232870.ci@mhssce.ac.in",
+    "certificate_path": "certificates/organizers/rahilkhan.jpg"
+  },
+  {
+    "name": "Ali Hassan Kadri",
+    "email": "ali.231212.co@mhssce.ac.in",
+    "certificate_path": "certificates/organizers/alihassankadri.jpg"
+  },
+  {
+    "name": "Aman Khan",
+    "email": "aman.221223.co@mhssce.ac.in",
+    "certificate_path": "certificates/organizers/amankhan.jpg"
+  },
+  {
+    "name": "Arfat Momin",
+    "email": "arfat.232868.ci@mhssce.ac.in",
+    "certificate_path": "certificates/organizers/arfatmomin.jpg"
+  },
+  {
+    "name": "Faiz Shaikh",
+    "email": "faizur.241842.ci@mhssce.ac.in",
+    "certificate_path": "certificates/organizers/faizshaikh.jpg"
+  },
+  {
+    "name": "Fouzan Khan",
+    "email": "fouzan.232270.co@mhssce.ac.in",
+    "certificate_path": "certificates/organizers/fouzankhan.jpg"
+  },
+  {
+    "name": "Hamsa Naik",
+    "email": "hamsa.231736.cs@mhssce.ac.in",
+    "certificate_path": "certificates/organizers/hamsanaik.jpg"
+  },
+  {
+    "name": "Maryam Lokhandwala",
+    "email": "maryam.231730.cs@mhssce.ac.in",
+    "certificate_path": "certificates/organizers/maryamlokhandwala.jpg"
+  },
+  {
+    "name": "Naveera Sayyed",
+    "email": "amjad.241827.ci@mhssce.ac.in",
+    "certificate_path": "certificates/organizers/naveerasayyed.jpg"
+  },
+  {
+    "name": "Numa Kazi",
+    "email": "numa.231214.co@mhssce.ac.in",
+    "certificate_path": "certificates/organizers/numakazi.jpg"
+  },
+  {
+    "name": "Shaan Sakharkar",
+    "email": "shaan.231244.co@mhssce.ac.in",
+    "certificate_path": "certificates/organizers/shaansakharkar.jpg"
+  },
+  {
+    "name": "Umme Hafsa Welder",
+    "email": "ummehafasa.242778.aiml@mhssce.ac.in",
+    "certificate_path": "certificates/organizers/ummehafsawelder.jpg"
   }
 ]

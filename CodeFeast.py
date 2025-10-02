@@ -23,41 +23,73 @@ class EmailSender:
         self.organization_name = os.getenv('ORGANIZATION_NAME', 'Programmers Club')
         
     
+    def generate_achievement_badge(self):
+        """Generate achievement badge section"""
+        return """
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 24px; margin: 20px 0; text-align: center;">
+          <div style="font-size: 48px; margin-bottom: 8px;">🏆</div>
+          <h3 style="color: #ffffff; font-size: 18px; font-weight: 700; margin: 0 0 8px 0;">Achievement Unlocked!</h3>
+          <p style="color: #e9d5ff; font-size: 14px; margin: 0;">You've mastered the MERN Stack</p>
+        </div>
+        """
+    
+    def generate_stats_section(self):
+        """Generate completion stats"""
+        return """
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin: 24px 0;">
+          <tr>
+            <td align="center" style="padding: 16px; background: #f0fdf4; border-radius: 8px; width: 33.33%;">
+              <div style="font-size: 24px; font-weight: 700; color: #166534; margin-bottom: 4px;">✓</div>
+              <div style="font-size: 12px; color: #166534; font-weight: 600;">Completed</div>
+            </td>
+            <td style="width: 8px;"></td>
+            <td align="center" style="padding: 16px; background: #eff6ff; border-radius: 8px; width: 33.33%;">
+              <div style="font-size: 24px; font-weight: 700; color: #1e40af; margin-bottom: 4px;">★</div>
+              <div style="font-size: 12px; color: #1e40af; font-weight: 600;">Certified</div>
+            </td>
+            <td style="width: 8px;"></td>
+            <td align="center" style="padding: 16px; background: #fef3c7; border-radius: 8px; width: 33.33%;">
+              <div style="font-size: 24px; font-weight: 700; color: #92400e; margin-bottom: 4px;">🚀</div>
+              <div style="font-size: 12px; color: #92400e; font-weight: 600;">Ready</div>
+            </td>
+          </tr>
+        </table>
+        """    
     def generate_content(self, name):
-        """Simple content generation (centered layout with improved typography)"""
+        """Professional full-width content generation"""
         return f"""
-        <div style="max-width:520px; margin:0 auto; text-align:center;">
-          <h2 style="margin:0 0 12px; font-size:22px; line-height:1.35; color:#ffffff; letter-spacing:-0.2px; font-weight:800;">
+        <div style="width:100%; text-align:center;">
+          <h2 style="margin:0 0 12px; font-size:22px; line-height:1.35; color:#1e293b; letter-spacing:-0.2px; font-weight:800;">
             Congratulations {name}! 🎉
           </h2>
-          <p style="margin:0 0 12px; color:#cbd5e1; font-size:16px; line-height:1.7;">
+          <p style="margin:0 0 12px; color:#475569; font-size:16px; line-height:1.7;">
             You have successfully completed the <strong>{self.event_name}</strong>!
           </p>
-          <p style="margin:0 0 12px; color:#cbd5e1; font-size:16px; line-height:1.7;">
+          <p style="margin:0 0 12px; color:#475569; font-size:16px; line-height:1.7;">
             Your completion certificate is attached to this email.
           </p>
-          <p style="margin:0 0 16px; color:#cbd5e1; font-size:16px; line-height:1.7;">
+          <p style="margin:0 0 16px; color:#475569; font-size:16px; line-height:1.7;">
             Keep learning and building amazing projects!
           </p>
-          <p style="margin:0; color:#94a3b8; font-size:14px; line-height:1.6;">
+          <p style="margin:0; color:#64748b; font-size:14px; line-height:1.6;">
             Best regards,<br>{self.organization_name} Team
           </p>
         </div>
         """
     
     def generate_next_steps(self):
-        """Simple next steps (centered block, readable on mobile)"""
+        """Professional full-width next steps"""
         return """
-        <div style="max-width:520px; margin:12px auto 0; text-align:center;">
-          <p style="margin:0 0 10px; color:#e2e8f0; font-weight:700; letter-spacing:.2px;">Next Steps</p>
-          <p style="margin:6px 0; color:#cbd5e1; font-size:14px;">✅ Download your certificate</p>
-          <p style="margin:6px 0; color:#cbd5e1; font-size:14px;">🚀 Start building MERN projects</p>
-          <p style="margin:6px 0; color:#cbd5e1; font-size:14px;">📚 Keep learning!</p>
+        <div style="width:100%; margin:12px 0 0; text-align:center;">
+          <p style="margin:0 0 10px; color:#1e293b; font-weight:700; letter-spacing:.2px;">Next Steps</p>
+          <p style="margin:6px 0; color:#475569; font-size:14px;">✅ Download your certificate</p>
+          <p style="margin:6px 0; color:#475569; font-size:14px;">🚀 Start building MERN projects</p>
+          <p style="margin:6px 0; color:#475569; font-size:14px;">📚 Keep learning!</p>
         </div>
         """
     
     def generate_html_template(self, name):
-        """User-specified Web3 template (fully responsive and centered)"""
+        """Professional full-width responsive template"""
         return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -75,24 +107,37 @@ class EmailSender:
     * {{ margin: 0; padding: 0; box-sizing: border-box; }}
     body {{ -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }}
     
+    /* Full width responsive design */
+    .email-container {{ width: 100% !important; max-width: 100% !important; }}
+    .main-table {{ width: 100% !important; max-width: 100% !important; }}
+    
     /* Mobile responsiveness */
     @media only screen and (max-width: 600px) {{
-      .outer-pad {{ padding: 12px !important; }}
-      .container {{ width: 100% !important; max-width: 100% !important; }}
-      .card {{ border-radius: 12px !important; }}
-      .px {{ padding: 24px 20px !important; }}
-      .title {{ font-size: 22px !important; line-height: 1.3 !important; }}
-      .eyebrow {{ font-size: 11px !important; padding: 5px 11px !important; }}
-      .hero-text {{ font-size: 13px !important; }}
+      .outer-pad {{ padding: 8px !important; }}
+      .container {{ width: 100% !important; max-width: 100% !important; margin: 0 !important; }}
+      .card {{ border-radius: 0 !important; border-left: none !important; border-right: none !important; }}
+      .px {{ padding: 20px 16px !important; }}
+      .title {{ font-size: 24px !important; line-height: 1.3 !important; }}
+      .eyebrow {{ font-size: 11px !important; padding: 6px 12px !important; }}
+      .hero-text {{ font-size: 14px !important; }}
       .chips span {{ 
         display: inline-block !important; 
-        margin: 4px 5px 4px 0 !important;
+        margin: 3px 4px 3px 0 !important;
         font-size: 11px !important;
-        padding: 5px 9px !important;
+        padding: 6px 10px !important;
       }}
-      .divider-pad {{ padding: 0 20px !important; }}
-      .footer {{ font-size: 11px !important; padding: 16px 20px !important; line-height: 1.5 !important; }}
+      .divider-pad {{ padding: 0 16px !important; }}
+      .footer {{ font-size: 11px !important; padding: 16px !important; line-height: 1.5 !important; }}
       .gradient-bar {{ height: 3px !important; }}
+      .content-section {{ padding: 20px 16px !important; }}
+    }}
+    
+    /* Tablet responsiveness */
+    @media only screen and (max-width: 768px) {{
+      .outer-pad {{ padding: 12px !important; }}
+      .container {{ width: 100% !important; max-width: 100% !important; }}
+      .px {{ padding: 24px 20px !important; }}
+      .title {{ font-size: 26px !important; }}
     }}
     
     /* Disable auto-link styling */
@@ -104,73 +149,67 @@ class EmailSender:
       font-weight: inherit !important;
       line-height: inherit !important;
     }}
-    
-    /* Dark mode support */
-    @media (prefers-color-scheme: dark) {{
-      .dark-mode-bg {{ background: #0b0f1a !important; }}
-      .dark-mode-card {{ background: #0e1320 !important; }}
-    }}
   </style>
 </head>
-<body style="margin:0; padding:0; background:#0b0f1a; color:#e5e7eb; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height:1.6;">
+<body style="margin:0; padding:0; background:#f8fafc; color:#334155; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height:1.6; width:100%;">
   <!-- Preheader text (hidden) -->
   <div style="display:none; max-height:0; overflow:hidden; mso-hide:all;">
     🎉 Congratulations on completing {self.event_name}! Your certificate is ready.
   </div>
   
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#0b0f1a;" class="dark-mode-bg">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc; width:100%;" class="email-container">
     <tr>
-      <td align="center" class="outer-pad" style="padding:32px 24px;">
+      <td align="center" class="outer-pad" style="padding:16px 8px; width:100%;">
         <!-- Main Container -->
-        <table role="presentation" width="640" align="center" cellspacing="0" cellpadding="0" border="0" class="container card" style="width:100%; max-width:640px; background:#0e1320; border-radius:20px; border:1px solid rgba(124,58,237,0.4); box-shadow:0 0 0 1px rgba(0,229,255,0.08), 0 20px 40px -12px rgba(124,58,237,0.3), 0 8px 20px -8px rgba(0,0,0,0.4); overflow:hidden; margin:0 auto;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="container card main-table" style="width:100%; max-width:100%; background:#ffffff; border-radius:0; border:1px solid #e2e8f0; box-shadow:0 2px 4px rgba(0, 0, 0, 0.1); overflow:hidden; margin:0;">
           
           <!-- Gradient Bar -->
           <tr>
-            <td class="gradient-bar" style="padding:0; height:4px; background:linear-gradient(90deg, #00e5ff 0%, #7c3aed 50%, #00e5ff 100%); background-size: 200% 100%;"></td>
+            <td class="gradient-bar" style="padding:0; height:4px; background:linear-gradient(90deg, #3b82f6 0%, #8b5cf6 50%, #06b6d4 100%); background-size: 200% 100%; width:100%;"></td>
           </tr>
           
           <!-- Header Section -->
           <tr>
-            <td class="px" style="padding:36px 32px 12px 32px; text-align:center;">
-              <div class="eyebrow" style="display:inline-block; padding:7px 14px; border:1px solid rgba(0,229,255,0.4); border-radius:999px; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:#a5f3fc; background:rgba(2,6,23,0.7); font-weight:600; box-shadow:0 0 20px rgba(0,229,255,0.15);">
+            <td class="px" style="padding:32px 24px 16px 24px; text-align:center; width:100%;">
+              <div class="eyebrow" style="display:inline-block; padding:8px 16px; border:1px solid #3b82f6; border-radius:999px; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:#3b82f6; background:#eff6ff; font-weight:600;">
                 ✨ Certificate of Completion
               </div>
               
-              <h1 class="title" style="margin:20px 0 10px; font-size:28px; line-height:1.2; color:#ffffff; letter-spacing:-0.5px; font-weight:800; text-shadow:0 2px 10px rgba(124,58,237,0.3);">
+              <h1 class="title" style="margin:20px 0 12px; font-size:28px; line-height:1.2; color:#1e293b; letter-spacing:-0.5px; font-weight:800;">
                 {self.event_name}
               </h1>
               
-              <p class="hero-text" style="margin:0 0 20px; color:#94a3b8; font-size:15px; line-height:1.6;">
-                <strong style="color:#e5e7eb; font-weight:700;">{name}</strong> 👋 — you've officially completed the {self.event_name}.<br>
-                <span style="color:#a5f3fc;">Welcome to the builders.</span>
+              <p class="hero-text" style="margin:0 0 20px; color:#64748b; font-size:16px; line-height:1.6;">
+                <strong style="color:#1e293b; font-weight:700;">{name}</strong> 👋 — you've successfully completed the {self.event_name}.<br>
+                <span style="color:#3b82f6;">Congratulations on your achievement!</span>
               </p>
             </td>
           </tr>
           
           <!-- Divider -->
           <tr>
-            <td class="divider-pad" style="padding:0 32px;">
-              <div style="height:1px; width:100%; background:linear-gradient(90deg, rgba(0,229,255,0) 0%, rgba(0,229,255,0.6) 50%, rgba(0,229,255,0) 100%);"></div>
+            <td class="divider-pad" style="padding:0 24px; width:100%;">
+              <div style="height:1px; width:100%; background:linear-gradient(90deg, rgba(59,130,246,0) 0%, rgba(59,130,246,0.3) 50%, rgba(59,130,246,0) 100%);"></div>
             </td>
           </tr>
           
           <!-- Content Section -->
           <tr>
-            <td class="px" style="padding:28px 32px 8px 32px;">
+            <td class="px content-section" style="padding:24px; width:100%;">
               {self.generate_content(name)}
               
               <!-- Tech Stack Chips -->
-              <div class="chips" style="margin:22px 0 8px; text-align:center; line-height:1.8;">
-                <span style="display:inline-block; margin:4px 6px 4px 0; padding:7px 12px; border-radius:10px; font-size:12px; font-weight:600; color:#a5f3fc; background:rgba(3,105,161,0.12); border:1px solid rgba(3,105,161,0.4); box-shadow:0 2px 8px rgba(3,105,161,0.15); transition:all 0.3s;">
+              <div class="chips" style="margin:24px 0 12px; text-align:center; line-height:1.8;">
+                <span style="display:inline-block; margin:4px 6px 4px 0; padding:8px 14px; border-radius:8px; font-size:12px; font-weight:600; color:#0369a1; background:#e0f2fe; border:1px solid #0ea5e9;">
                   MongoDB
                 </span>
-                <span style="display:inline-block; margin:4px 6px 4px 0; padding:7px 12px; border-radius:10px; font-size:12px; font-weight:600; color:#c7d2fe; background:rgba(67,56,202,0.15); border:1px solid rgba(67,56,202,0.4); box-shadow:0 2px 8px rgba(67,56,202,0.15); transition:all 0.3s;">
+                <span style="display:inline-block; margin:4px 6px 4px 0; padding:8px 14px; border-radius:8px; font-size:12px; font-weight:600; color:#7c3aed; background:#f3e8ff; border:1px solid #a855f7;">
                   Express
                 </span>
-                <span style="display:inline-block; margin:4px 6px 4px 0; padding:7px 12px; border-radius:10px; font-size:12px; font-weight:600; color:#6ee7b7; background:rgba(6,78,59,0.15); border:1px solid rgba(6,78,59,0.4); box-shadow:0 2px 8px rgba(6,78,59,0.15); transition:all 0.3s;">
+                <span style="display:inline-block; margin:4px 6px 4px 0; padding:8px 14px; border-radius:8px; font-size:12px; font-weight:600; color:#059669; background:#ecfdf5; border:1px solid #10b981;">
                   React
                 </span>
-                <span style="display:inline-block; margin:4px 6px 4px 0; padding:7px 12px; border-radius:10px; font-size:12px; font-weight:600; color:#fca5a5; background:rgba(127,29,29,0.15); border:1px solid rgba(127,29,29,0.4); box-shadow:0 2px 8px rgba(127,29,29,0.15); transition:all 0.3s;">
+                <span style="display:inline-block; margin:4px 6px 4px 0; padding:8px 14px; border-radius:8px; font-size:12px; font-weight:600; color:#dc2626; background:#fef2f2; border:1px solid #ef4444;">
                   Node.js
                 </span>
               </div>
@@ -184,24 +223,24 @@ class EmailSender:
           
           <!-- Footer -->
           <tr>
-            <td class="footer" style="padding:20px 28px; border-top:1px solid rgba(148,163,184,0.15); text-align:center; color:#94a3b8; font-size:12px; line-height:1.7; background:rgba(2,6,23,0.4);">
-              <div style="margin-bottom:8px; color:#cbd5e1;">
-                📎 <strong style="color:#e5e7eb;">Attached:</strong> PDF certificate for {name}
+            <td class="footer" style="padding:20px 24px; border-top:1px solid #e2e8f0; text-align:center; color:#64748b; font-size:12px; line-height:1.7; background:#f8fafc; width:100%;">
+              <div style="margin-bottom:8px; color:#475569;">
+                📎 <strong style="color:#1e293b;">Attached:</strong> JPG certificate for {name}
               </div>
               <div style="color:#64748b;">
-                If the button doesn't work, open the attachment directly.
+                If the attachment doesn't work, please contact us for assistance.
               </div>
-              <div style="margin-top:12px; padding-top:12px; border-top:1px solid rgba(148,163,184,0.1); color:#64748b;">
-                Built with <span style="color:#f87171;">❤️</span> by <strong style="color:#94a3b8;">{self.organization_name}</strong>
+              <div style="margin-top:12px; padding-top:12px; border-top:1px solid #e2e8f0; color:#64748b;">
+                Best regards,<br><strong style="color:#1e293b;">{self.organization_name} Team</strong>
               </div>
             </td>
           </tr>
         </table>
         
         <!-- Spacer for email clients -->
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top:16px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top:16px; width:100%;">
           <tr>
-            <td style="text-align:center; color:#64748b; font-size:11px; padding:0 20px;">
+            <td style="text-align:center; color:#94a3b8; font-size:11px; padding:0 16px; width:100%;">
               This email was sent because you completed {self.event_name}
             </td>
           </tr>
@@ -217,7 +256,7 @@ class EmailSender:
         # Create message
         msg = MIMEMultipart()
         msg['Subject'] = f"{self.event_name} - Certificate"
-        msg['From'] = self.sender_email
+        msg['From'] = f"{self.event_name} <{self.sender_email}>"
         msg['To'] = email
 
         # Generate HTML content
@@ -228,8 +267,8 @@ class EmailSender:
         if certificate_path and os.path.exists(certificate_path):
             try:
                 with open(certificate_path, "rb") as f:
-                    file_attachment = MIMEApplication(f.read(), _subtype="pdf")
-                    filename = f"{name.replace(' ', '_')}_Certificate.pdf"
+                    file_attachment = MIMEApplication(f.read(), _subtype="jpg")
+                    filename = f"{name.replace(' ', '_')}_Certificate.jpg"
                     file_attachment.add_header('Content-Disposition', 'attachment', filename=filename)
                     msg.attach(file_attachment)
                     print(f"[ATTACH] Certificate: {filename}")
